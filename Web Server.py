@@ -18,8 +18,9 @@ def createServer():
                 #data = "HTTP/1.1 200 OK\r\n"
                 #data += "Content-Type: text/html; charset=utf-8\r\n"
                 #data += "\r\n"
-                data = ""
+                data = "" # Stores location for 302s
                 contenttype = "text/html"
+                httpcode = 200
                 if(path == "/shutdown" and shutdown == False):
                     data = "<title>Shut down</title><p>The device has shut down</p>"
                     shutdown = True
@@ -28,21 +29,22 @@ def createServer():
                     data = f.read()
                     f.close()
                 elif path == "/log.csv":
-                    if mainpath == "" :
-                        #data+="<p>Logfile from this device</p>"
+                    if mainpath == "" : # This device is the main device
                         f = open("log.csv",mode="r")
-                        data+=f.read()
+                        data=f.read()
                         f.close()
                         contenttype="text/csv"
-                    else :
-                        data="<p>Logfile from the main device</p>"
+                    else : # This device is not the main device
+                        data="http://"+mainpath+"/log.csv"
+                        httpcode=302 # https://en.wikipedia.org/wiki/HTTP_302
                 else:
                     f = open("HomePage.html",mode='r')
                     data=f.read()
                     f.close()
                     shutdown = False
                 #data += "\r\n\r\n"
-                clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
+                if httpcode == 200:clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
+                elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
                 clientsocket.shutdown(SHUT_WR)
                 if(shutdown):break
     except KeyboardInterrupt :
