@@ -3,7 +3,7 @@ class Settings():
     mainpath = ""
     devices = []
     port = 0
-f = open("Web Server Settings.dat","rb")
+f = open("ServerSettings.dat","rb")
 settings = pickle.load(f)
 f.close()
 print(settings.mainpath)

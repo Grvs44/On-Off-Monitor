@@ -5,7 +5,7 @@ class Settings():
     devices = []
     port = 80
     def __init__(self):#https://www.w3schools.com/python/python_classes.asp
-        f = open("Web Server Settings.dat","rb")
+        f = open("ServerSettings.dat","rb")
         self = pickle.load(f)
         f.close()
 def CreateServer():

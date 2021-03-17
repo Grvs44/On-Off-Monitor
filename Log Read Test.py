@@ -1,11 +1,12 @@
 import pickle
 class Settings():
     sleeptime=1
-f = open("logsettings.dat","rb")
+f = open("LogSettings.dat","rb")
 settings = pickle.load(f)
 f.close()
 print(settings.sleeptime)
-f  = open("locallog.dat","rb")
+f  = open("LocalLog.dat","rb")
 logdata = pickle.load(f)
 f.close()
 print(logdata)
+input("Press RETURN to exit ")

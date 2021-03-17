@@ -21,7 +21,7 @@ if settings.mainpath == "":
 print(settings.mainpath)
 print(settings.devices)
 print(settings.port)
-f = open("Web Server Settings.dat","wb")
+f = open("ServerSettings.dat","wb")
 pickle.dump(settings,f)
 f.close()
 print("Setup complete")
