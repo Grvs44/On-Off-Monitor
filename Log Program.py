@@ -2,6 +2,7 @@ import pickle
 from time import sleep
 from datetime import datetime
 #import RPi.GPIO as gpio
+#import atexit
 class Settings():
     sleeptime = 1
     devices = []
@@ -59,11 +60,23 @@ def Load():
         if currentlogtime not in settings.logfiles:
             settings.logfiles.append(currentlogtime)
     except FileNotFoundError:print("FNF")
+def GetLogFileList():
+    global logfiles
+    try:
+        f = open("LogFileList.dat","rb")
+        logfiles = pickle.load(f)
+        f.close()
+    except FileNotFoundError: pass
 def CheckLogName():
-    global currentlogtime
+    global currentlogtime, logfiles
     now = datetime.now().strftime("%Y%m%d")# https://www.w3schools.com/python/python_datetime.asp
-    if(now>currentlogtime or now == ""):
+    if(now>currentlogtime or currentlogtime == ""):
         currentlogtime = now
+        if now not in logfiles:
+            logfiles.append(now)
+            f = open("LogFileList.dat","wb")
+            pickle.dump(logfiles,f)
+            f.close()
         Load()
 def OnOrOff(status):
     if status: return "off"
@@ -79,12 +92,15 @@ def Log() :
                 devicestatus[i] = not devicestatus[i]##
                 Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(settings.devices[i].pin))
         sleep(settings.sleeptime)
+#atexit.register(gpio.cleanup)
 currentlogtime = ""
 logdata = []
 devicestatus = []
+logfiles = []
 settings = Settings()
 print("On/Off Monitor Log started. Hold Ctrl+C to exit.")
 try:
+    GetLogFileList()
     CheckLogName()
     Log()
 except KeyboardInterrupt:

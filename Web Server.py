@@ -32,12 +32,17 @@ def CreateServer():
                 data=f.read()
                 f.close()
             elif path == "/shutdown" and not firstrun:
-                data = "<title>Shut down - Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>The web service has shut down</h1>"
+                data = "<title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>The web service has shut down</h1>"
                 shutdown = True
-            elif path == "/localdata":
-                f=open("locallog.dgl",mode="r")
-                data = f.read()
-                f.close()
+            elif "/localdata" in path:
+                try:
+                    item = 1
+                    if "?" in path:
+                        item = int(path.split("?")[1])
+                    f=open("LocalLog_"+settings.logfiles[len(setings.logfiles)-item]+".dat",mode="r")
+                    data = f.read()
+                    f.close()
+                except IndexError: pass
             elif path == "/log.csv":
                 if settings.mainpath == "" : # This device is the main device
                     f = open("log.csv",mode="r")
@@ -72,6 +77,15 @@ def GetData():
         iterations +=1
     mysock.close()
     print(iterations)
+def GetLogFileList():
+    global logfiles
+    try:
+        g = open("LogFileList.dat","rb")
+        logfiles = pickle.load(g)
+        g.close()
+    except FileNotFoundError: print("FNF")
 #print('Access http://localhost:9000')
+logfiles = []
 settings = Settings()
+GetLogFileList()
 CreateServer()
