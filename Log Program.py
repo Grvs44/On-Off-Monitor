@@ -7,30 +7,6 @@ class Settings():
     sleeptime = 1
     devices = []
     logfiles = []
-    def __init__(self):
-        try:
-            f = open("LogSettings.dat","rb")
-            self = pickle.load(f)
-            f.close()
-        except FileNotFoundError:
-            print("On/Off Monitor Log Setup")
-            sleep = input("Wait time after loops (seconds, default is 1): ")
-            if sleep != "": self.sleeptime = int(sleep)
-            #else: self.sleeptime=1
-            self.devices = []
-            print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
-            try:
-                while 1:
-                    newname = input("Name: ")
-                    if newname == "" : break
-                    newpin = int(input("GPIO pin number of device input: "))
-                    newled = int(input("GPIO pin number of status LED: "))
-                    self.devices.append(Device(newname,newpin,newled))
-            except KeyboardInterrupt: pass
-            except ValueError: pass
-            g = open("LogSettings.dat","wb")
-            pickle.dump(self,g)
-            g.close()
 class Device():
     name = ""
     pin = 0
@@ -92,12 +68,37 @@ def Log() :
                 devicestatus[i] = not devicestatus[i]##
                 Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(settings.devices[i].pin))
         sleep(settings.sleeptime)
+def GetSettings(file):
+    try:
+        f = open(file,"rb")
+        self = pickle.load(f)
+        f.close()
+    except FileNotFoundError:
+        print("On/Off Monitor Log Setup")
+        sleep = input("Wait time after loops (seconds, default is 1): ")
+        if sleep != "": self.sleeptime = int(sleep)
+        #else: self.sleeptime=1
+        self.devices = []
+        print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
+        try:
+            while 1:
+                newname = input("Name: ")
+                if newname == "" : break
+                newpin = int(input("GPIO pin number of device input: "))
+                newled = int(input("GPIO pin number of status LED: "))
+                self.devices.append(Device(newname,newpin,newled))
+        except KeyboardInterrupt: pass
+        except ValueError: pass
+        g = open(file,"wb")
+        pickle.dump(self,g)
+        g.close()
+    return self
 #atexit.register(gpio.cleanup)
 currentlogtime = ""
 logdata = []
 devicestatus = []
 logfiles = []
-settings = Settings()
+settings = GetSettings("LogSettings.dat")
 print("On/Off Monitor Log started. Hold Ctrl+C to exit.")
 try:
     GetLogFileList()
