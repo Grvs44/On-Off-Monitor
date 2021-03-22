@@ -3,13 +3,58 @@
     <title>On/Off Monitor Home</title>
     <style>
         body{font-family:'Segoe UI';}
+        ul{list-style-type:none}
     </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
     <h1>On/Off Monitor Home</h1>
     <ul>
-        <li><a href="log.csv" download>Download the latest log file</a></li>
-        <li><a href="shutdown">Shut down this device</a></li>
+        <li>
+        <h2>Log files</h2>
+            <ul>
+                <li><h3>Download</h3>
+                <form method="post" action="log.csv">
+                    <ul>
+                        <li>
+                            <label for="lognum">Using </label>
+                            <input type="number" id="lognum" name="lognum" value="1" />
+                            <label for="oldfiles">of the oldest files</label>
+                            <input type="radio" name="fileage" value="old" id="oldfiles"/>
+                            <label for="newfiles">newest files</label>
+                            <input type="radio" name="fileage" value="new" id="newfiles" checked/>
+                        </li>
+                        <li><input type="submit" value="Download"/></li>
+                    </ul>
+                </form>
+                </li>
+            </ul>
+        <p><a href="log.csv" download>Download the latest log file</a></p>
+        </li>
+        <li>
+            <h2>Shutdown</h2>
+            <form method="post" action="shutdown">
+                <ul>
+                    <li>
+                        <label for="sdrthis">This device</label>
+                        <input type="radio" id="sdrthis" value="this" name="devices" checked />
+                    </li>
+                    <li>
+                        <label for="sdrall">All devices</label>
+                        <input type="radio" id="sdrall" name="devices" value="all" />
+                    </li>
+                    <li>
+                        <label for="sdrweb">Web service</label>
+                        <input type="radio" id="sdrweb" value="web" name="web" checked />
+                    </li>
+                    <li>
+                        <label for="sdrdevice">Web service and device</label>
+                        <input type="radio" id="sdrdevice" value="all" name="web" />
+                    </li>
+                <li><input type="submit" value="Shut down"/></li>
+                </ul>
+            </form>
+        </li>
     </ul>
 </body>
 </html>
