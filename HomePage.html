@@ -28,6 +28,20 @@
                     </ul>
                 </form>
                 </li>
+<li><h3>Delete</h3>
+<form method="post" action="deletelogs">
+<ul>
+<li>
+<label for="lognum">Delete </label>
+                            <input type="number" id="lognum" name="lognum" value="1" />
+                            <label for="oldfiles">of the oldest files</label>
+                            <input type="radio" name="fileage" value="old" id="oldfiles"/>
+                            <label for="newfiles">newest files</label>
+                            <input type="radio" name="fileage" value="new" id="newfiles" checked/>
+</li>
+</ul>
+</form>
+</li>
             </ul>
         <p><a href="log.csv" download>Download the latest log file</a></p>
         </li>
