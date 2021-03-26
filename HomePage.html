@@ -32,11 +32,11 @@
 <form method="post" action="deletelogs">
 <ul>
 <li>
-<label for="lognum">Delete </label>
-                            <input type="number" id="lognum" name="lognum" value="1" />
-                            <label for="oldfiles">of the oldest files</label>
-                            <input type="radio" name="fileage" value="old" id="oldfiles"/>
-                            <label for="newfiles">newest files</label>
+<label for="lognum">Number of log files: </label>
+                            <input type="number" id="lognum" name="lognum" value="1" onkeyup="ChangeDeleteLabels(this)" min="1" step="1"/></li>
+                            <li><label for="oldfiles">Delete <span id="deletelabel1">1</span> of the oldest files</label>
+                            <input type="radio" name="fileage" value="old" id="oldfiles"/></li>
+                            <li><label for="newfiles">Keep <span id="deletelabel2">1</span> of the newest files</label>
                             <input type="radio" name="fileage" value="new" id="newfiles" checked/>
 </li>
 </ul>
@@ -70,5 +70,10 @@
             </form>
         </li>
     </ul>
+<script>
+function ChangeDeleteLabels(entry){
+	document.getElementById("deletelabel1").innerText = document.getElementById("deletelabel2").innerText = entry.value
+}
+</script>
 </body>
 </html>
