@@ -1,5 +1,6 @@
 from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
 import pickle,json
+from os import unlink
 class Settings():
     #mainpath = ""
     devices = []
@@ -86,6 +87,42 @@ def Server():
                 #else : # This device is not the main device
                    # data="http://"+settings.mainpath+"/log.csv"
                    # httpcode=302
+            elif path == "/deletelocallogs":
+                fileage = "new"
+                lognum = 1
+                pathdata = pieces[len(pieces)-1].split("&")
+                for i in range(len(pathdata)):
+                    pathdata[i] = pathdata[i].split("=")
+                    if pathdata[i][0] == "lognum":
+                        pathdata[i][1] = int(pathdata[i][1])
+                        if pathdata[i][1] > 1:
+                            lognum = pathdata[i][1]
+                    elif pathdata[i][0] == "fileage":
+                        fileage = pathdata[i][1]
+                data = str(DeleteLogFiles(lognum,(fileage=="new")))
+            elif path == "/deletelogs":
+                fileage = "new"
+                lognum = 1
+                pathdata = pieces[len(pieces)-1].split("&")
+                for i in range(len(pathdata)):
+                    pathdata[i] = pathdata[i].split("=")
+                    if pathdata[i][0] == "lognum":
+                        pathdata[i][1] = int(pathdata[i][1])
+                        if pathdata[i][1] > 1:
+                            lognum = pathdata[i][1]
+                    elif pathdata[i][0] == "fileage":
+                        fileage = pathdata[i][1]
+                deletedfiles = 0
+                if len(logfiles)>0:#for i in range(len(lognum)):
+                    if len(logfiles)>lognum: lognum = len(logfiles)
+                    deletedfiles+=DeleteLogFiles(lognum,(fileage=="new"))
+                    for device in settings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata))
+                data = "/deleted?" + str(deletedfiles)
+                httpcode = 302
+            elif "/deleted" in path:
+                deleteditems = "0"
+                if "?" in path: deleteditems = path.split("?")[1]
+                data = "<title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
             else:
                 data = "/"
                 httpcode = 301
@@ -96,6 +133,16 @@ def Server():
             if(shutdown):break
     serversocket.close()
     if turnoff: print("Turned off")
+def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete x old, True = keep x new, where x is lognum
+    deleteindexes = []
+    if keepmode:
+        deleteindexes = range(len(logfiles)-lognum)
+    else:
+        deleteindexes = range(lognum)
+    for i in deleteindexes: unlink("LocalLog_"+logfiles.pop(0)+".dat")#logfiles[i]
+    #for i in deleteindexes: localfiles.pop(deleteindexes[0])
+    SaveLogFileList()
+    return len(deleteindexes)
 def ListToCsv(header,item):
     csv=header+"\n"
     for i in range(len(item)):
@@ -109,7 +156,7 @@ def GetData(address,path,postlist=[]):
     if len(postlist)>0: method = "POST"
     post = ""
     for i in range(len(postlist)):
-        post+=postlist[i][0]+"="+postlist[i][1]
+        post+=str(postlist[i][0])+"="+str(postlist[i][1])
         if i+1 != len(postlist): post+="&"
     addressparts = address.split(":")
     if len(addressparts) == 1: addressparts.append(80)
@@ -129,6 +176,10 @@ def GetData(address,path,postlist=[]):
     mysock.close()
     #print(iterations)
     return data.decode()
+def SaveLogFileList():
+    g = open("LogFileList.dat","wb")
+    pickle.dump(logfiles,g)
+    g.close()
 def GetLogFileList():
     global logfiles
     try:

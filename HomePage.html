@@ -3,7 +3,7 @@
     <title>On/Off Monitor Home</title>
     <style>
         body{font-family:'Segoe UI';}
-        ul{list-style-type:none}
+        ul{list-style-type:none;}
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
@@ -34,16 +34,16 @@
 <li>
 <label for="lognum">Number of log files: </label>
                             <input type="number" id="lognum" name="lognum" value="1" onkeyup="ChangeDeleteLabels(this)" min="1" step="1"/></li>
-                            <li><label for="oldfiles">Delete <span id="deletelabel1">1</span> of the oldest files</label>
-                            <input type="radio" name="fileage" value="old" id="oldfiles"/></li>
-                            <li><label for="newfiles">Keep <span id="deletelabel2">1</span> of the newest files</label>
-                            <input type="radio" name="fileage" value="new" id="newfiles" checked/>
+                            <li><label for="oldfilesd">Delete <span id="deletelabel1">1</span> of the oldest files</label>
+                            <input type="radio" name="fileage" value="old" id="oldfilesd"/></li>
+                            <li><label for="newfilesd">Keep <span id="deletelabel2">1</span> of the newest files</label>
+                            <input type="radio" name="fileage" value="new" id="newfilesd" checked/>
 </li>
+<li><input type="button" onclick="ConfirmDelete(this)" value="Delete" id="deletebutton"/><input type="submit" style="display:none" id="confirmdeletebutton" value="Confirm delete"/>
 </ul>
 </form>
 </li>
             </ul>
-        <p><a href="log.csv" download>Download the latest log file</a></p>
         </li>
         <li>
             <h2>Shutdown</h2>
@@ -70,10 +70,20 @@
             </form>
         </li>
     </ul>
+</body>
 <script>
 function ChangeDeleteLabels(entry){
 	document.getElementById("deletelabel1").innerText = document.getElementById("deletelabel2").innerText = entry.value
+	let dbtn = document.getElementById("deletebutton")
+	dbtn.disabled  = (entry.value=="")
+	dbtn.value = "Delete"
+	document.getElementById("confirmdeletebutton").style.display = "none"
+}
+function ConfirmDelete(){
+	let btn = document.getElementById("deletebutton")
+	btn.value = btn.value=="Delete"?"Decline delete":"Delete"
+	let sub = document.getElementById("confirmdeletebutton")
+	sub.style.display=sub.style.display=="inline"?"none":"inline"
 }
 </script>
-</body>
 </html>
