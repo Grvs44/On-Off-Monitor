@@ -1,6 +1,7 @@
 import pickle
 from time import sleep
 from datetime import datetime
+from OnOffMonitor import *
 #import RPi.GPIO as gpio
 #import atexit
 class Settings():
@@ -20,8 +21,8 @@ def SaveSettings():
     pickle.dump(settings,f)
     f.close()
 def Add(devicename,message):
-    log = [datetime.now(),devicename,message]
-    print(log)
+    log = [datetime.now().strftime("%Y/%m/%d")+","+datetime.now().strftime("%H:%M:%S"),devicename,message]#.now()
+    print(ListToCsv("",[log]))
     logdata.append(log)#.strftime("%Y%m%d%H%M%S")
     f = open("LocalLog_"+currentlogtime+".dat","wb")
     pickle.dump(logdata,f)
@@ -48,7 +49,9 @@ def CheckLogName():
     now = datetime.now().strftime("%Y%m%d")# https://www.w3schools.com/python/python_datetime.asp
     if(now>currentlogtime or currentlogtime == ""):
         currentlogtime = now
+        GetLogFileList()
         if now not in logfiles:
+            print("hi")
             logfiles.append(now)
             f = open("LogFileList.dat","wb")
             pickle.dump(logfiles,f)
@@ -76,6 +79,7 @@ def GetSettings(file):
     except FileNotFoundError:
         print("On/Off Monitor Log Setup")
         sleep = input("Wait time after loops (seconds, default is 1): ")
+        self = Settings()
         if sleep != "": self.sleeptime = int(sleep)
         #else: self.sleeptime=1
         self.devices = []
@@ -101,7 +105,7 @@ logfiles = []
 settings = GetSettings("LogSettings.dat")
 print("On/Off Monitor Log started. Hold Ctrl+C to exit.")
 try:
-    GetLogFileList()
+    #GetLogFileList()
     CheckLogName()
     Log()
 except KeyboardInterrupt:

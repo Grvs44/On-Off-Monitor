@@ -1,6 +1,7 @@
 from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
 import pickle,json
-from os import unlink
+from os import unlink, system
+from OnOffMonitor import ListToCsv
 class Settings():
     #mainpath = ""
     devices = []
@@ -132,7 +133,7 @@ def Server():
             clientsocket.shutdown(SHUT_WR)
             if(shutdown):break
     serversocket.close()
-    if turnoff: print("Turned off")
+    if turnoff: system("shutdown /s /t 1")#https://www.geeksforgeeks.org/python-script-to-shutdown-computer/
 def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete x old, True = keep x new, where x is lognum
     deleteindexes = []
     if keepmode:
@@ -143,14 +144,6 @@ def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete x old, True = keep
     #for i in deleteindexes: localfiles.pop(deleteindexes[0])
     SaveLogFileList()
     return len(deleteindexes)
-def ListToCsv(header,item):
-    csv=header+"\n"
-    for i in range(len(item)):
-        for j in range(len(item[i])):
-            csv+=str(item[i][j])
-            if j+1 != len(item[i]): csv+=","
-        if i+1 != len(item): csv+="\n"
-    return csv
 def GetData(address,path,postlist=[]):
     method = "GET"
     if len(postlist)>0: method = "POST"
