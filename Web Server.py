@@ -7,7 +7,7 @@ class Settings():
     devices = []
     port = 80
 def Server():
-    ipaddress = "localhost"#gethostbyname(gethostname())
+    ipaddress = gethostbyname(gethostname())#"localhost"
     serversocket = socket(AF_INET, SOCK_STREAM)
     serversocket.bind((ipaddress,settings.port))
     serversocket.listen(5)

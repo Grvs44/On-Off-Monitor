@@ -39,7 +39,7 @@
                             <li><label for="newfilesd">Keep <span id="deletelabel2">1</span> of the newest files</label>
                             <input type="radio" name="fileage" value="new" id="newfilesd" checked/>
 </li>
-<li><input type="button" onclick="ConfirmDelete(this)" value="Delete" id="deletebutton"/><input type="submit" style="display:none" id="confirmdeletebutton" value="Confirm delete"/>
+<li><input type="button" onclick="ConfirmDelete('Delete')" value="Delete" id="deletebutton"/><input type="submit" style="display:none" id="confirmdeletebutton" value="Confirm delete"/>
 </ul>
 </form>
 </li>
@@ -65,7 +65,7 @@
                         <label for="sdrdevice">Web service and device</label>
                         <input type="radio" id="sdrdevice" value="all" name="web" />
                     </li>
-                <li><input type="submit" value="Shut down"/></li>
+                <li><input type="button" value="Shut down" onclick="ConfirmShutdown()" id="sdownbutton"/><input style="display:none" type="submit" id="confirmsdownbutton" value="Confirm shut down"/></li>
                 </ul>
             </form>
         </li>
@@ -84,6 +84,12 @@ function ConfirmDelete(){
 	btn.value = btn.value=="Delete"?"Decline delete":"Delete"
 	let sub = document.getElementById("confirmdeletebutton")
 	sub.style.display=sub.style.display=="inline"?"none":"inline"
+}
+function ConfirmShutdown(){
+	let btn = document.getElementById("sdownbutton")
+	btn.value=btn.value=="Shut down"?"Decline shut down":"Shut down"
+	let sub = document.getElementById("confirmsdownbutton")
+	sub.style.display=btn.value=="Shut down"?"none":"inline"
 }
 </script>
 </html>
