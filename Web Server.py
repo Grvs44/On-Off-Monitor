@@ -45,8 +45,9 @@ def Server():
                     #if settings.mainpath == "":
                     print(settings.devices)
                     for device in settings.devices:
-                        GetData(device,"/shutdown",postlist=["web",web])
                         print("a")
+                        GetData(device,"/shutdown",postlist=[["web",web]])
+                        print("b")
                     #else: GetData(settings.mainpath,"/shutdown",postlist=[["devices",devices],["web",web]])
                     data+="Shut down requested for all devices</h1>"
                 else:
@@ -59,8 +60,10 @@ def Server():
                     item = 1
                     if "?" in path:
                         item = int(path.split("?")[1])
-                    f=open("LocalLog_"+logfiles[len(logfiles)-item]+".dat",mode="r")
-                    data = json.dumps(pickle.load(f))
+                    if item > len(logfiles): data=json.dumps([])
+                    else:
+                        f=open("LocalLog_"+logfiles[len(logfiles)-item]+".dat",mode="r")
+                        data = json.dumps(pickle.load(f))
                     f.close()
                 except IndexError: pass
             elif path == "/log.csv":
@@ -75,13 +78,14 @@ def Server():
                     elif pathdata[i][0] == "fileage":
                         fileage = pathdata[i][1]
                 if lognum < 1: lognum = 1
+                elif lognum > len(logfiles): lognum = len(logfiles)
                 filedata = []
                 for i in range(lognum):
                     f = open("LocalLog_"+logfiles[len(logfiles)-lognum]+".dat","rb")
                     filedata.extend(pickle.load(f))
                     f.close()
                     for device in settings.devices:
-                        filedata.extend(json.loads(GetData(device,"/localdata?"+str(lognum))))
+                        filedata.extend(json.loads(GetData(device,"/localdata?"+str(lognum)).split("\r\n")[3]))
                 filedata.sort(reverse=True)#key=filedata[i][0],
                 data = ListToCsv("Date,Time,Device,Message",filedata)
                 contenttype="text/csv"
@@ -100,6 +104,7 @@ def Server():
                             lognum = pathdata[i][1]
                     elif pathdata[i][0] == "fileage":
                         fileage = pathdata[i][1]
+                if len(logfiles)<lognum: lognum = len(logfiles)
                 data = str(DeleteLogFiles(lognum,(fileage=="new")))
             elif path == "/deletelogs":
                 fileage = "new"
@@ -114,10 +119,9 @@ def Server():
                     elif pathdata[i][0] == "fileage":
                         fileage = pathdata[i][1]
                 deletedfiles = 0
-                if len(logfiles)>0:#for i in range(len(lognum)):
-                    if len(logfiles)>lognum: lognum = len(logfiles)
+                if len(logfiles)>0:#(line after one below was indented)#for i in range(len(lognum)):
                     deletedfiles+=DeleteLogFiles(lognum,(fileage=="new"))
-                    for device in settings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata))
+                for device in settings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
                 data = "/deleted?" + str(deletedfiles)
                 httpcode = 302
             elif "/deleted" in path:
@@ -158,16 +162,19 @@ def GetData(address,path,postlist=[]):
     cmd = (method+' '+path+' HTTP/1.1\r\n\r\n'+post).encode()
     mysock.send(cmd)
     #print(cmd)
-    #iterations = 0
-    data = ""
+    iterations = 0
+    print("At GetData")
+    data = "".encode()
     while True:
-        data += mysock.recv(512)
-        if len(data) < 1:
+        newdata = mysock.recv(512)
+        data += newdata
+        if len(newdata) < 1:
             break
-        #print(data.decode(),end='')
-        #iterations +=1
+        print(data.decode(),end='')
+        iterations +=1
     mysock.close()
-    #print(iterations)
+    print(iterations)
+    #print(data.decode().split("\r\n"))
     return data.decode()
 def SaveLogFileList():
     g = open("LogFileList.dat","wb")
