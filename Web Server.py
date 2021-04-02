@@ -34,7 +34,7 @@ def Server():
                 pathdata = pieces[len(pieces)-1].split("&")
                 devices = "this"
                 web = "web"
-                data = "<title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>"
+                data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>"
                 for i in range(len(pathdata)):
                     pathdata[i] = pathdata[i].split("=")
                     if pathdata[i][0] == "devices":
@@ -127,7 +127,7 @@ def Server():
             elif "/deleted" in path:
                 deleteditems = "0"
                 if "?" in path: deleteditems = path.split("?")[1]
-                data = "<title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
+                data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
             else:
                 data = "/"
                 httpcode = 301
@@ -137,7 +137,7 @@ def Server():
             clientsocket.shutdown(SHUT_WR)
             if(shutdown):break
     serversocket.close()
-    if turnoff: system("shutdown /s /t 1")#https://www.geeksforgeeks.org/python-script-to-shutdown-computer/
+    if turnoff: system("sudo shutdown -h 0")#https://raspberrypi.stackexchange.com/questions/61202/shutdown-the-pi-at-the-end-of-my-python-script-using-cron
 def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete x old, True = keep x new, where x is lognum
     deleteindexes = []
     if keepmode:

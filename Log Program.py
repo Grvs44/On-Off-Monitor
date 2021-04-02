@@ -2,8 +2,8 @@ import pickle
 from time import sleep
 from datetime import datetime
 from OnOffMonitor import *
-#import RPi.GPIO as gpio
-#import atexit
+import RPi.GPIO as gpio
+from atexit import register
 class Settings():
     sleeptime = 1
     devices = []
@@ -23,7 +23,7 @@ def SaveSettings():
 def Add(devicename,message):
     log = [datetime.now().strftime("%Y/%m/%d")+","+datetime.now().strftime("%H:%M:%S"),devicename,message]#.now()
     print(ListToCsv("",[log]))
-    logdata.append(log)#.strftime("%Y%m%d%H%M%S")
+    logdata.append(log)
     f = open("LocalLog_"+currentlogtime+".dat","wb")
     pickle.dump(logdata,f)
     f.close()
@@ -46,7 +46,7 @@ def GetLogFileList():
     except FileNotFoundError: pass
 def CheckLogName():
     global currentlogtime, logfiles
-    now = datetime.now().strftime("%Y%m%d")# https://www.w3schools.com/python/python_datetime.asp
+    now = datetime.now().strftime("%Y%m%d")
     if(now>currentlogtime or currentlogtime == ""):
         currentlogtime = now
         GetLogFileList()
@@ -61,14 +61,16 @@ def OnOrOff(status):
     if status: return "off"
     else: return "on"
 def Log() :
+    gpio.setmode(gpio.BOARD)
     for device in settings.devices:
-        #gpio.setMode(device.pin,IN)
+        gpio.setMode(device.pin,gpio.IN)
+        gpio.setMode(device.led,gpio.OUT)
         devicestatus.append(True)
     while 1:
         CheckLogName()
         for i in range(len(devicestatus)):
-            if devicestatus[i]:##
-                devicestatus[i] = not devicestatus[i]##
+            if devicestatus[i] != gpio.input(settings.devices[i].pin):
+                devicestatus[i] = gpio.input(settings.devices[i].pin)
                 Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(settings.devices[i].pin))
         sleep(settings.sleeptime)
 def GetSettings(file):
@@ -81,7 +83,6 @@ def GetSettings(file):
         sleep = input("Wait time after loops (seconds, default is 1): ")
         self = Settings()
         if sleep != "": self.sleeptime = int(sleep)
-        #else: self.sleeptime=1
         self.devices = []
         print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
         try:
@@ -97,7 +98,7 @@ def GetSettings(file):
         pickle.dump(self,g)
         g.close()
     return self
-#atexit.register(gpio.cleanup)
+register(gpio.cleanup)
 currentlogtime = ""
 logdata = []
 devicestatus = []
@@ -105,7 +106,6 @@ logfiles = []
 settings = GetSettings("LogSettings.dat")
 print("On/Off Monitor Log started. Hold Ctrl+C to exit.")
 try:
-    #GetLogFileList()
     CheckLogName()
     Log()
 except KeyboardInterrupt:
