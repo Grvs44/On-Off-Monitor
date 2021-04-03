@@ -62,24 +62,28 @@ def OnOrOff(status):
 def TryInput(pin):
     if pin == None: return True
     else: return gpio.input(pin)
-def Log() :
-    print("Date,Time,Device,Message",end="")
+def SetupGpio():
     gpio.setmode(gpio.BOARD)
+    print(settings.ledswitch)
+    if settings.ledswitch != None: gpio.setup(settings.ledswitch,gpio.IN)
     for device in settings.devices:
         gpio.setup(device.pin,gpio.IN)
         gpio.setup(device.led,gpio.OUT)
         devicestatus.append(True)
+def Log() :
+    global ledswitchstate
+    print("Date,Time,Device,Message",end="")
     while 1:
         CheckLogName()
         for i in range(len(devicestatus)):
             if devicestatus[i] != gpio.input(settings.devices[i].pin):
                 devicestatus[i] = gpio.input(settings.devices[i].pin)
-                if settings.ledswitch == None and not TryInput(settings.ledswitch): gpio.output(settings.devices[i].led,not devicestatus[i])
+                if settings.ledswitch == None or not TryInput(settings.ledswitch): gpio.output(settings.devices[i].led,not devicestatus[i])
                 Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(devicestatus[i]))
         if settings.ledswitch != None and ledswitchstate != TryInput(settings.ledswitch):
+            ledswitchstate = gpio.input(settings.ledswitch)
             for i in range(len(devicestatus)):
-                devicestatus[i] = True
-                gpio.output(settings.devices[i],False)
+                gpio.output(settings.devices[i].led,(not devicestatus[i] and not gpio.input(settings.ledswitch)))
         sleep(settings.sleeptime)
 def GetSettings(file):
     try:
@@ -91,7 +95,7 @@ def GetSettings(file):
         sleep = input("Wait time after loops (seconds, default is 1): ")
         self = Settings()
         if sleep != "": self.sleeptime = int(sleep)
-        leds = int(input("Input pin number for LED panel switch (leave blank if there is no switch): "))
+        leds = input("Input pin number for LED panel switch (leave blank if there is no switch): ")
         if leds != "": self.ledswitch = int(leds)
         self.devices = []
         print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
@@ -118,6 +122,7 @@ settings = GetSettings("LogSettings.dat")
 print("On/Off Monitor Log started. Hold Ctrl+C to exit.")
 try:
     CheckLogName()
+    SetupGpio()
     Log()
 except KeyboardInterrupt:
     print("\nOn/Off Monitor Log exited.")
