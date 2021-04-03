@@ -22,21 +22,20 @@ def SaveSettings():
     f.close()
 def Add(devicename,message):
     log = [datetime.now().strftime("%Y/%m/%d")+","+datetime.now().strftime("%H:%M:%S"),devicename,message]#.now()
-    print(ListToCsv("",[log]))
+    print(ListToCsv("",[log]),end="")
     logdata.append(log)
     f = open("LocalLog_"+currentlogtime+".dat","wb")
     pickle.dump(logdata,f)
     f.close()
 def Load():
     global logdata
-    print(currentlogtime)
     try:
         f = open("LocalLog_"+currentlogtime+".dat","rb")
         logdata = pickle.load(f)
         f.close()
         if currentlogtime not in settings.logfiles:
             settings.logfiles.append(currentlogtime)
-    except FileNotFoundError:print("FNF")
+    except FileNotFoundError: pass
 def GetLogFileList():
     global logfiles
     try:
@@ -51,7 +50,6 @@ def CheckLogName():
         currentlogtime = now
         GetLogFileList()
         if now not in logfiles:
-            print("hi")
             logfiles.append(now)
             f = open("LogFileList.dat","wb")
             pickle.dump(logfiles,f)
@@ -61,16 +59,18 @@ def OnOrOff(status):
     if status: return "off"
     else: return "on"
 def Log() :
+    print("Date,Time,Device,Message",end="")
     gpio.setmode(gpio.BOARD)
     for device in settings.devices:
-        gpio.setMode(device.pin,gpio.IN)
-        gpio.setMode(device.led,gpio.OUT)
+        gpio.setup(device.pin,gpio.IN)
+        gpio.setup(device.led,gpio.OUT)
         devicestatus.append(True)
     while 1:
         CheckLogName()
         for i in range(len(devicestatus)):
             if devicestatus[i] != gpio.input(settings.devices[i].pin):
                 devicestatus[i] = gpio.input(settings.devices[i].pin)
+                gpio.output(settings.devices[i].led,not devicestatus[i])
                 Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(settings.devices[i].pin))
         sleep(settings.sleeptime)
 def GetSettings(file):

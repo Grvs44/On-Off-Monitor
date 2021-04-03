@@ -3,7 +3,6 @@ import pickle,json
 from os import unlink, system
 from OnOffMonitor import ListToCsv
 class Settings():
-    #mainpath = ""
     devices = []
     port = 80
 def Server():
@@ -14,15 +13,14 @@ def Server():
     shutdown = False
     turnoff = False
     while(1):
-            (clientsocket, address) = serversocket.accept()
+            #(clientsocket,address) = serversocket.accept()
+            clientsocket = serversocket.accept()[0]
             rd = clientsocket.recv(5000).decode()
             pieces = rd.split("\n")
             path = ""
             if ( len(pieces) > 0 ) :
-                print(pieces[0])
                 try: path = pieces[0].split(" ")[1].lower()
                 except IndexError : pass
-            print("path: ",path)
             data = ""
             contenttype = "text/html"
             httpcode = 200
@@ -42,13 +40,8 @@ def Server():
                     elif pathdata[i][0] == "web":
                         web = pathdata[i][1]
                 if devices == "all":
-                    #if settings.mainpath == "":
-                    print(settings.devices)
                     for device in settings.devices:
-                        print("a")
                         GetData(device,"/shutdown",postlist=[["web",web]])
-                        print("b")
-                    #else: GetData(settings.mainpath,"/shutdown",postlist=[["devices",devices],["web",web]])
                     data+="Shut down requested for all devices</h1>"
                 else:
                     data+="Shut down</h1>"
@@ -67,7 +60,6 @@ def Server():
                     f.close()
                 except IndexError: pass
             elif path == "/log.csv":
-                #if settings.mainpath == "" : # This device is the main device
                 lognum = 1
                 fileage = "newfiles"
                 pathdata = pieces[len(pieces)-1].split("&")
@@ -86,12 +78,9 @@ def Server():
                     f.close()
                     for device in settings.devices:
                         filedata.extend(json.loads(GetData(device,"/localdata?"+str(lognum)).split("\r\n")[3]))
-                filedata.sort(reverse=True)#key=filedata[i][0],
+                filedata.sort(reverse=True)
                 data = ListToCsv("Date,Time,Device,Message",filedata)
                 contenttype="text/csv"
-                #else : # This device is not the main device
-                   # data="http://"+settings.mainpath+"/log.csv"
-                   # httpcode=302
             elif path == "/deletelocallogs":
                 fileage = "new"
                 lognum = 1
@@ -119,7 +108,7 @@ def Server():
                     elif pathdata[i][0] == "fileage":
                         fileage = pathdata[i][1]
                 deletedfiles = 0
-                if len(logfiles)>0:#(line after one below was indented)#for i in range(len(lognum)):
+                if len(logfiles)>0:
                     deletedfiles+=DeleteLogFiles(lognum,(fileage=="new"))
                 for device in settings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
                 data = "/deleted?" + str(deletedfiles)
@@ -137,15 +126,14 @@ def Server():
             clientsocket.shutdown(SHUT_WR)
             if(shutdown):break
     serversocket.close()
-    if turnoff: system("sudo shutdown -h 0")#https://raspberrypi.stackexchange.com/questions/61202/shutdown-the-pi-at-the-end-of-my-python-script-using-cron
-def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete x old, True = keep x new, where x is lognum
+    if turnoff: system("sudo shutdown -h 0")
+def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True = keep lognum new
     deleteindexes = []
     if keepmode:
         deleteindexes = range(len(logfiles)-lognum)
     else:
         deleteindexes = range(lognum)
-    for i in deleteindexes: unlink("LocalLog_"+logfiles.pop(0)+".dat")#logfiles[i]
-    #for i in deleteindexes: localfiles.pop(deleteindexes[0])
+    for i in deleteindexes: unlink("LocalLog_"+logfiles.pop(0)+".dat")
     SaveLogFileList()
     return len(deleteindexes)
 def GetData(address,path,postlist=[]):
@@ -157,24 +145,17 @@ def GetData(address,path,postlist=[]):
         if i+1 != len(postlist): post+="&"
     addressparts = address.split(":")
     if len(addressparts) == 1: addressparts.append(80)
-    mysock = socket(AF_INET,SOCK_STREAM)
-    mysock.connect((addressparts[0], int(addressparts[1])))
+    clientsocket = socket(AF_INET,SOCK_STREAM)
+    clientsocket.connect((addressparts[0], int(addressparts[1])))
     cmd = (method+' '+path+' HTTP/1.1\r\n\r\n'+post).encode()
-    mysock.send(cmd)
-    #print(cmd)
-    iterations = 0
-    print("At GetData")
+    clientsocket.send(cmd)
     data = "".encode()
     while True:
-        newdata = mysock.recv(512)
+        newdata = clientsocket.recv(512)
         data += newdata
         if len(newdata) < 1:
             break
-        print(data.decode(),end='')
-        iterations +=1
-    mysock.close()
-    print(iterations)
-    #print(data.decode().split("\r\n"))
+    clientsocket.close()
     return data.decode()
 def SaveLogFileList():
     g = open("LogFileList.dat","wb")
@@ -186,7 +167,7 @@ def GetLogFileList():
         g = open("LogFileList.dat","rb")
         logfiles = pickle.load(g)
         g.close()
-    except FileNotFoundError: print("FNF")
+    except FileNotFoundError: pass
 def GetSettings(file):
     try:
         f = open(file,"rb")
