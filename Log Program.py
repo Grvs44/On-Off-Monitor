@@ -71,7 +71,7 @@ def Log() :
             if devicestatus[i] != gpio.input(settings.devices[i].pin):
                 devicestatus[i] = gpio.input(settings.devices[i].pin)
                 gpio.output(settings.devices[i].led,not devicestatus[i])
-                Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(settings.devices[i].pin))
+                Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(devicestatus[i]))
         sleep(settings.sleeptime)
 def GetSettings(file):
     try:
@@ -109,4 +109,4 @@ try:
     CheckLogName()
     Log()
 except KeyboardInterrupt:
-    print("On/Off Monitor Log exited.")
+    print("\nOn/Off Monitor Log exited.")
