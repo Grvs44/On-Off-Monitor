@@ -8,7 +8,7 @@ try:
 	if item in range(len(logfiles)):
 	    from OnOffMonitor import ListToCsv
 	    f = open("LocalLog_"+logfiles[item]+".dat","rb")
-	    print(ListToCsv("Date,Time,Device,Message",pickle.load(f)))
+	    print(ListToCsv("Date,Time,Device,Status",pickle.load(f)))
 	    f.close()
 	else: print("File not found")
 except ValueError: print("File not found")

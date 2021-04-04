@@ -72,7 +72,7 @@ def SetupGpio():
         devicestatus.append(True)
 def Log() :
     global ledswitchstate
-    print("Date,Time,Device,Message",end="")
+    print("Date,Time,Device,Status",end="")
     while 1:
         CheckLogName()
         for i in range(len(devicestatus)):
