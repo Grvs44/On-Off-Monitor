@@ -57,8 +57,8 @@ def CheckLogName():
             f.close()
         Load()
 def OnOrOff(status):
-    if status: return "off"
-    else: return "on"
+    if status: return "Off"
+    else: return "On"
 def TryInput(pin):
     if pin == None: return True
     else: return gpio.input(pin)
@@ -79,7 +79,7 @@ def Log() :
             if devicestatus[i] != gpio.input(settings.devices[i].pin):
                 devicestatus[i] = gpio.input(settings.devices[i].pin)
                 if settings.ledswitch == None or not TryInput(settings.ledswitch): gpio.output(settings.devices[i].led,not devicestatus[i])
-                Add(settings.devices[i].name,settings.devices[i].name + " turned " + OnOrOff(devicestatus[i]))
+                Add(settings.devices[i].name,OnOrOff(devicestatus[i]))
         if settings.ledswitch != None and ledswitchstate != TryInput(settings.ledswitch):
             ledswitchstate = gpio.input(settings.ledswitch)
             for i in range(len(devicestatus)):

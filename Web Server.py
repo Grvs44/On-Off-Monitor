@@ -79,7 +79,7 @@ def Server():
                     for device in settings.devices:
                         filedata.extend(json.loads(GetData(device,"/localdata?"+str(lognum)).split("\r\n")[3]))
                 filedata.sort(reverse=True)
-                data = ListToCsv("Date,Time,Device,Message",filedata)
+                data = ListToCsv("Date,Time,Device,Status",filedata)
                 contenttype="text/csv"
             elif path == "/deletelocallogs":
                 fileage = "new"
