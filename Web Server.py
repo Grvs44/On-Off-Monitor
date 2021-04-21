@@ -32,19 +32,22 @@ def Server():
                 pathdata = pieces[len(pieces)-1].split("&")
                 devices = "this"
                 web = "web"
-                data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>"
                 for i in range(len(pathdata)):
                     pathdata[i] = pathdata[i].split("=")
                     if pathdata[i][0] == "devices":
                         devices = pathdata[i][1]
                     elif pathdata[i][0] == "web":
                         web = pathdata[i][1]
+                    elif pathdata[i][0] == "app":
+                        app = (pathdata[i][1]=="1")
                 if devices == "all":
                     for device in settings.devices:
                         GetData(device,"/shutdown",postlist=[["web",web]])
-                    data+="Shut down requested for all devices</h1>"
+                    data="Shut down requested for all devices"
                 else:
-                    data+="Shut down</h1>"
+                    data="Shut down"
+                if not app:
+                    data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>" + data + "</h1>"
                 if web == "all":
                     turnoff = True
                 shutdown = True
@@ -98,6 +101,7 @@ def Server():
             elif path == "/deletelogs":
                 fileage = "new"
                 lognum = 1
+                app = False
                 pathdata = pieces[len(pieces)-1].split("&")
                 for i in range(len(pathdata)):
                     pathdata[i] = pathdata[i].split("=")
@@ -107,12 +111,17 @@ def Server():
                             lognum = pathdata[i][1]
                     elif pathdata[i][0] == "fileage":
                         fileage = pathdata[i][1]
+                    elif pathdata[i][0] == "app":
+                        app = (pathdata[i][1]=="1")
                 deletedfiles = 0
                 if len(logfiles)>0:
                     deletedfiles+=DeleteLogFiles(lognum,(fileage=="new"))
                 for device in settings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
-                data = "/deleted?" + str(deletedfiles)
-                httpcode = 302
+                if app:
+                    data = str(deletedfiles) + " files were deleted"
+                else:
+                    data = "/deleted?" + str(deletedfiles)
+                    httpcode = 302
             elif "/deleted" in path:
                 deleteditems = "0"
                 if "?" in path: deleteditems = path.split("?")[1]
