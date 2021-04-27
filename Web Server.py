@@ -63,15 +63,7 @@ def Server():
                     f.close()
                 except IndexError: pass
             elif path == "/log.csv":
-                lognum = 1
-                fileage = "newfiles"
-                pathdata = pieces[len(pieces)-1].split("&")
-                for i in range(len(pathdata)):
-                    pathdata[i] = pathdata[i].split("=")
-                    if pathdata[i][0] == "lognum":
-                        lognum = int(pathdata[i][1])
-                    elif pathdata[i][0] == "fileage":
-                        fileage = pathdata[i][1]
+                lognun,fileage,app = SplitPostData(pieces)
                 if lognum < 1: lognum = 1
                 elif lognum > len(logfiles): lognum = len(logfiles)
                 filedata = []
@@ -85,34 +77,11 @@ def Server():
                 data = ListToCsv("Date,Time,Device,Status",filedata)
                 contenttype="text/csv"
             elif path == "/deletelocallogs":
-                fileage = "new"
-                lognum = 1
-                pathdata = pieces[len(pieces)-1].split("&")
-                for i in range(len(pathdata)):
-                    pathdata[i] = pathdata[i].split("=")
-                    if pathdata[i][0] == "lognum":
-                        pathdata[i][1] = int(pathdata[i][1])
-                        if pathdata[i][1] > 1:
-                            lognum = pathdata[i][1]
-                    elif pathdata[i][0] == "fileage":
-                        fileage = pathdata[i][1]
+                lognum,fileage,app = SplitPostData(pieces)
                 if len(logfiles)<lognum: lognum = len(logfiles)
                 data = str(DeleteLogFiles(lognum,(fileage=="new")))
             elif path == "/deletelogs":
-                fileage = "new"
-                lognum = 1
-                app = False
-                pathdata = pieces[len(pieces)-1].split("&")
-                for i in range(len(pathdata)):
-                    pathdata[i] = pathdata[i].split("=")
-                    if pathdata[i][0] == "lognum":
-                        pathdata[i][1] = int(pathdata[i][1])
-                        if pathdata[i][1] > 1:
-                            lognum = pathdata[i][1]
-                    elif pathdata[i][0] == "fileage":
-                        fileage = pathdata[i][1]
-                    elif pathdata[i][0] == "app":
-                        app = (pathdata[i][1]=="1")
+                lognum,fileage,app = SplitPostData(pieces)
                 deletedfiles = 0
                 if len(logfiles)>0:
                     deletedfiles+=DeleteLogFiles(lognum,(fileage=="new"))
@@ -122,6 +91,16 @@ def Server():
                 else:
                     data = "/deleted?" + str(deletedfiles)
                     httpcode = 302
+            elif path == "/logfilelist":
+                lognum,fileage,app = SplitPostData(pieces)
+                if app: data = json.dumps(logfiles)
+                else: httpcode = 301
+            elif path == "/deletelogfile":
+                lognum,fileage,app = SplitPostData(pieces)
+                if app:
+                    deleted = logfiles.pop(lognum)
+                    data = deleted + " was deleted"
+                else: httpcode = 301
             elif "/deleted" in path:
                 deleteditems = "0"
                 if "?" in path: deleteditems = path.split("?")[1]
@@ -136,6 +115,22 @@ def Server():
             if(shutdown):break
     serversocket.close()
     if turnoff: system("sudo shutdown -h 0")
+def SplitPostData(pieces):
+    fileage = "new"
+    lognum = 1
+    app = False
+    pathdata = pieces[len(pieces)-1].split("&")
+    for i in range(len(pathdata)):
+        pathdata[i] = pathdata[i].split("=")
+        if pathdata[i][0] == "lognum":
+            pathdata[i][1] = int(pathdata[i][1])
+            if pathdata[i][1] > 1:
+                lognum = pathdata[i][1]
+        elif pathdata[i][0] == "fileage":
+            fileage = pathdata[i][1]
+        elif pathdata[i][0] == "app":
+            app = (pathdata[i][1]=="1")
+    return (lognum,fileage,app)
 def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True = keep lognum new
     deleteindexes = []
     if keepmode:
