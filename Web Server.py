@@ -60,7 +60,7 @@ def Server():
                     else:
                         f=open("LocalLog_"+logfiles[len(logfiles)-item]+".dat",mode="r")
                         data = json.dumps(pickle.load(f))
-                    f.close()
+                        f.close()
                 except IndexError: pass
             elif path == "/log.csv":
                 lognun,fileage,app = SplitPostData(pieces)
@@ -95,11 +95,15 @@ def Server():
                 lognum,fileage,app = SplitPostData(pieces)
                 if app: data = json.dumps(logfiles)
                 else: httpcode = 301
-            elif path == "/deletelogfile":
+            elif path == "/deletelocallog":
                 lognum,fileage,app = SplitPostData(pieces)
                 if app:
-                    deleted = logfiles.pop(lognum)
-                    data = deleted + " was deleted"
+                    unlink("LocalLog_"+logfiles.pop(lognum)+".dat")
+                    data = "Log file deleted"
+                else: httpcode = 301
+            elif path == "/logfile":
+                lognum,fileage,app = SplitPostData(pieces)
+                if app: data = json.dumps(logfilelist)
                 else: httpcode = 301
             elif "/deleted" in path:
                 deleteditems = "0"
