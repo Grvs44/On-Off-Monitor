@@ -22,7 +22,7 @@ def SaveSettings():
     pickle.dump(settings,f)
     f.close()
 def Add(devicename,message):
-    log = [datetime.now().strftime("%Y/%m/%d")+","+datetime.now().strftime("%H:%M:%S"),devicename,message]#.now()
+    log = [datetime.now().strftime("%Y/%m/%d,%H:%M:%S"),devicename,message]
     print(ListToCsv("",[log]),end="")
     logdata.append(log)
     f = open("LocalLog_"+currentlogtime+".dat","wb")

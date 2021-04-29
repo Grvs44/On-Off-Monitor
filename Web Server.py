@@ -6,7 +6,7 @@ class Settings():
     devices = []
     port = 80
 def Server():
-    ipaddress = gethostbyname(gethostname())#"localhost"
+    ipaddress = "localhost"#gethostbyname(gethostname())#"localhost"
     serversocket = socket(AF_INET, SOCK_STREAM)
     serversocket.bind((ipaddress,settings.port))
     serversocket.listen(5)
@@ -103,7 +103,13 @@ def Server():
                 else: httpcode = 301
             elif path == "/logfile":
                 lognum,fileage,app = SplitPostData(pieces)
-                if app: data = json.dumps(logfilelist)
+                if app:
+                    print("lognum: "+str(lognum))
+                    if lognum < len(logfiles):
+                        f = open("LocalLog_"+logfiles[lognum]+".dat","rb")
+                        data = json.dumps(pickle.load(f))
+                        f.close()
+                    else: data = "[]"
                 else: httpcode = 301
             elif "/deleted" in path:
                 deleteditems = "0"
@@ -124,16 +130,16 @@ def SplitPostData(pieces):
     lognum = 1
     app = False
     pathdata = pieces[len(pieces)-1].split("&")
+    print(pathdata)
     for i in range(len(pathdata)):
         pathdata[i] = pathdata[i].split("=")
         if pathdata[i][0] == "lognum":
-            pathdata[i][1] = int(pathdata[i][1])
-            if pathdata[i][1] > 1:
-                lognum = pathdata[i][1]
+            lognum = int(pathdata[i][1])
         elif pathdata[i][0] == "fileage":
             fileage = pathdata[i][1]
         elif pathdata[i][0] == "app":
             app = (pathdata[i][1]=="1")
+    print(lognum)
     return (lognum,fileage,app)
 def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True = keep lognum new
     deleteindexes = []
