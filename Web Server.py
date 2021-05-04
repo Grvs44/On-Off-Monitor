@@ -23,6 +23,7 @@ def Server():
             data = ""
             contenttype = "text/html"
             httpcode = 200
+            if "log" in path: GetLogFileList() #To keep logfiles up to date
             if path == "/":
                 f = open("HomePage.html",mode='r')
                 data=f.read()
@@ -97,8 +98,12 @@ def Server():
             elif path == "/deletelocallog":
                 lognum,fileage,app = SplitPostData(pieces)
                 if app:
-                    unlink("LocalLog_"+logfiles.pop(lognum)+".dat")
-                    data = "Log file deleted"
+                    item = logfiles.pop(lognum)
+                    data = item[:4] + "/" + item[4:6] + "/" + item[6:8]
+                    try:
+                        unlink("LocalLog_"+item+".dat")
+                        data += " was deleted"
+                    except FileNotFoundError: data += " was not found"
                     SaveLogFileList()
                 else: httpcode = 301
             elif path == "/logfile":
@@ -193,5 +198,4 @@ def GetSettings(file):
     return self
 logfiles = []
 settings = GetSettings("ServerSettings.dat")
-GetLogFileList()
 Server()
