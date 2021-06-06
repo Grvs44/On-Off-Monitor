@@ -14,8 +14,7 @@ def Server():
     turnoff = False
     while(1):
             clientsocket = serversocket.accept()[0]
-            rd = clientsocket.recv(5000).decode()
-            pieces = rd.split("\n")
+            pieces = clientsocket.recv(5000).decode().split("\n")
             path = ""
             if ( len(pieces) > 0 ) :
                 try: path = pieces[0].split(" ")[1].lower()
@@ -29,26 +28,16 @@ def Server():
                 data=f.read()
                 f.close()
             elif path == "/shutdown":
-                pathdata = pieces[len(pieces)-1].split("&")
-                devices = "this"
-                web = "web"
-                for i in range(len(pathdata)):
-                    pathdata[i] = pathdata[i].split("=")
-                    if pathdata[i][0] == "devices":
-                        devices = pathdata[i][1]
-                    elif pathdata[i][0] == "web":
-                        web = pathdata[i][1]
-                    elif pathdata[i][0] == "app":
-                        app = (pathdata[i][1]=="1")
-                if devices == "all":
+                post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
+                if post["devices"] == "all":
                     for device in settings.devices:
                         GetData(device,"/shutdown",postlist=[["web",web]])
                     data="Shut down requested for all devices"
                 else:
                     data="Shut down"
-                if not app:
+                if post["app"]=="0":
                     data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>" + data + "</h1>"
-                if web == "all":
+                if post["web"] == "all":
                     turnoff = True
                 shutdown = True
             elif "/localdata" in path:
@@ -63,40 +52,42 @@ def Server():
                         f.close()
                 except IndexError: pass
             elif path == "/log.csv":
-                lognun,fileage,app = SplitPostData(pieces)
-                if lognum < 1: lognum = 1
-                elif lognum > len(logfiles): lognum = len(logfiles)
+                post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
+                post["lognum"] = int(post["lognum"])
+                if post["lognum"] < 1: post["lognum"] = 1
+                elif post["lognum"] > len(logfiles): post["lognum"] = len(logfiles)
                 filedata = []
-                for i in range(lognum):
-                    f = open("LocalLog_"+logfiles[len(logfiles)-lognum]+".dat","rb")
+                for i in range(post["lognum"]):
+                    f = open("LocalLog_"+logfiles[len(logfiles)-post["lognum"]]+".dat","rb")
                     filedata.extend(pickle.load(f))
                     f.close()
-                    for device in settings.devices:
-                        filedata.extend(json.loads(GetData(device,"/localdata?"+str(lognum)).split("\r\n")[3]))
+                    for device in settings.devices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("\r\n")[3]))
                 filedata.sort(reverse=True)
                 data = ListToCsv("Date,Time,Device,Status",filedata)
                 contenttype="text/csv"
             elif path == "/deletelocallogs":
-                lognum,fileage,app = SplitPostData(pieces)
-                if len(logfiles)<lognum: lognum = len(logfiles)
-                data = str(DeleteLogFiles(lognum,(fileage=="new")))
+                post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
+                post["lognum"] = int(post["lognum"])
+                if len(logfiles)<post["lognum"]: data="No file deleted"#post["lognum"] = len(logfiles)
+                else: data = str(DeleteLogFiles(post["lognum"],(post["fileage"]=="new")))
             elif path == "/deletelogs":
-                lognum,fileage,app = SplitPostData(pieces)
+                post = GetPostData(pieces,{"lognum":0,"fileage":"new","app":"0"})
+                post["lognum"]=int(post["lognum"])
                 deletedfiles = 0
                 if len(logfiles)>0:
-                    deletedfiles+=DeleteLogFiles(lognum,(fileage=="new"))
+                    deletedfiles+=DeleteLogFiles(post["lognum"],(post["fileage"]=="new"))
                 for device in settings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
-                if app:
+                if post["app"]=="1":
                     data = str(deletedfiles) + " files were deleted"
                 else:
-                    data = "/deleted?" + str(deletedfiles)
+                    data = "/deleted" + str(deletedfiles)
                     httpcode = 302
             elif path == "/logfilelist":
-                lognum,fileage,app = SplitPostData(pieces)
-                if app: data = json.dumps(logfiles)
+                data = GetPostData(pieces,{"app":"0"})
+                if data["app"]=="1": data = json.dumps(logfiles)
                 else: httpcode = 301
             elif path == "/deletelocallog":
-                lognum,fileage,app = SplitPostData(pieces)
+                lognum = int(GetPostData(pieces,{"lognum":0})["lognum"])
                 if app:
                     item = logfiles.pop(lognum)
                     data = item[:4] + "/" + item[4:6] + "/" + item[6:8]
@@ -107,18 +98,19 @@ def Server():
                     SaveLogFileList()
                 else: httpcode = 301
             elif path == "/logfile":
-                lognum,fileage,app = SplitPostData(pieces)
-                if app:
+                post = GetPostData(pieces,{"lognum":0,"app":"0"})
+                post["lognum"]==int(post["lognum"])
+                if post["app"]=="1":
                     print("lognum: "+str(lognum))
-                    if lognum < len(logfiles):
-                        f = open("LocalLog_"+logfiles[lognum]+".dat","rb")
+                    if post["lognum"] < len(logfiles):
+                        f = open("LocalLog_"+logfiles[post["lognum"]]+".dat","rb")
                         data = json.dumps(pickle.load(f))
                         f.close()
                     else: data = "[]"
                 else: httpcode = 301
             elif "/deleted" in path:
-                deleteditems = "0"
-                if "?" in path: deleteditems = path.split("?")[1]
+                try: deleteditems = path.split("deleted")[1]
+                except IndexError: deleteditems = "0"
                 data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
             else:
                 data = "/"
@@ -130,20 +122,13 @@ def Server():
             if(shutdown):break
     serversocket.close()
     if turnoff: system("sudo shutdown -h 0")
-def SplitPostData(pieces):
-    fileage = "new"
-    lognum = 1
-    app = False
-    pathdata = pieces[len(pieces)-1].split("&")
-    for i in range(len(pathdata)):
-        pathdata[i] = pathdata[i].split("=")
-        if pathdata[i][0] == "lognum":
-            lognum = int(pathdata[i][1])
-        elif pathdata[i][0] == "fileage":
-            fileage = pathdata[i][1]
-        elif pathdata[i][0] == "app":
-            app = (pathdata[i][1]=="1")
-    return (lognum,fileage,app)
+def GetPostData(data,post):
+    data = data[len(data)-1].split("&")
+    for item in data:
+        item = item.split("=")
+        if item[0] in post:
+            post[item[0]]=item[1].replace("+"," ")
+    return post
 def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True = keep lognum new
     deleteindexes = []
     if keepmode:
