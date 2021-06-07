@@ -56,9 +56,12 @@ def Server():
                 post["lognum"] = int(post["lognum"])
                 if post["lognum"] < 1: post["lognum"] = 1
                 elif post["lognum"] > len(logfiles): post["lognum"] = len(logfiles)
+                if post["fileage"]=="new": logfilein = range(len(logfiles)-1,len(logfiles)-post["lognum"]-1,-1)
+                else: logfilein = range(post["lognum"])
+                print(list(logfilein))
                 filedata = []
-                for i in range(post["lognum"]):
-                    f = open("LocalLog_"+logfiles[len(logfiles)-post["lognum"]]+".dat","rb")
+                for i in logfilein:
+                    f = open("LocalLog_"+logfiles[i]+".dat","rb")
                     filedata.extend(pickle.load(f))
                     f.close()
                     for device in settings.devices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("\r\n")[3]))
@@ -68,8 +71,8 @@ def Server():
             elif path == "/deletelocallogs":
                 post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
                 post["lognum"] = int(post["lognum"])
-                if len(logfiles)<post["lognum"]: data="No file deleted"#post["lognum"] = len(logfiles)
-                else: data = str(DeleteLogFiles(post["lognum"],(post["fileage"]=="new")))
+                #if len(logfiles)<post["lognum"]: data="No file deleted"#post["lognum"] = len(logfiles)
+                data = str(DeleteLogFiles(post["lognum"],(post["fileage"]=="new")))
             elif path == "/deletelogs":
                 post = GetPostData(pieces,{"lognum":0,"fileage":"new","app":"0"})
                 post["lognum"]=int(post["lognum"])
@@ -130,14 +133,15 @@ def GetPostData(data,post):
             post[item[0]]=item[1].replace("+"," ")
     return post
 def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True = keep lognum new
-    deleteindexes = []
+    if lognum >= len(logfiles): lognum = len(logfiles)
     if keepmode:
         deleteindexes = range(len(logfiles)-lognum)
     else:
         deleteindexes = range(lognum)
+    print(list(deleteindexes))
     for i in deleteindexes: unlink("LocalLog_"+logfiles.pop(0)+".dat")
     SaveLogFileList()
-    return len(deleteindexes)
+    return lognum
 def GetData(address,path,postlist=[]):
     method = "GET"
     if len(postlist)>0: method = "POST"
