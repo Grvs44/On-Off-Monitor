@@ -2,7 +2,8 @@ import pickle
 from time import sleep
 from datetime import datetime
 from OnOffMonitor import *
-import RPi.GPIO as gpio
+try: import RPi.GPIO as gpio
+except ModuleNotFoundError: import GPIO_Test as gpio
 from atexit import register
 class Settings():
     sleeptime = 1
@@ -73,7 +74,7 @@ def SetupGpio():
 def Log() :
     global ledswitchstate
     print("Date,Time,Device,Status",end="")
-    while 1:
+    while True:
         CheckLogName()
         for i in range(len(devicestatus)):
             if devicestatus[i] != gpio.input(settings.devices[i].pin):
@@ -112,17 +113,23 @@ def GetSettings(file):
         pickle.dump(self,g)
         g.close()
     return self
-register(gpio.cleanup)
+def RunLogProgram():
+    print("On/Off Monitor Log started. Hold Ctrl+C to exit.")
+    try:
+        CheckLogName()
+        SetupGpio()
+        Log()
+    except KeyboardInterrupt:
+        quit()
+def Finish():
+    gpio.cleanup()
+    print("\nOn/Off Monitor Log exited.")
+register(Finish)
 currentlogtime = ""
 logdata = []
 devicestatus = []
 ledswitchstate = False
 logfiles = []
+#running = True
 settings = GetSettings("LogSettings.dat")
-print("On/Off Monitor Log started. Hold Ctrl+C to exit.")
-try:
-    CheckLogName()
-    SetupGpio()
-    Log()
-except KeyboardInterrupt:
-    print("\nOn/Off Monitor Log exited.")
+if __name__ == "__main__": RunLogProgram()

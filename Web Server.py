@@ -1,18 +1,19 @@
 from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
 import pickle,json
 from os import unlink, system
-from OnOffMonitor import ListToCsv
-class Settings():
+from threading import Thread
+from LogProgram import *
+class ServerSettings():
     devices = []
     port = 80
 def Server():
     ipaddress = gethostbyname(gethostname())#"localhost"
     serversocket = socket(AF_INET, SOCK_STREAM)
-    serversocket.bind((ipaddress,settings.port))
+    serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
-    shutdown = False
+    running = True
     turnoff = False
-    while(1):
+    while running:
             clientsocket = serversocket.accept()[0]
             pieces = clientsocket.recv(5000).decode().split("\n")
             path = ""
@@ -22,7 +23,7 @@ def Server():
             data = ""
             contenttype = "text/html"
             httpcode = 200
-            if "log" in path: GetLogFileList() #To keep logfiles up to date
+            #if "log" in path: GetLogFileList() #To keep logfiles up to date
             if path == "/":
                 f = open("HomePage.html",mode='r')
                 data=f.read()
@@ -30,7 +31,7 @@ def Server():
             elif path == "/shutdown":
                 post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
                 if post["devices"] == "all":
-                    for device in settings.devices:
+                    for device in serversettings.devices:
                         GetData(device,"/shutdown",postlist=[["web",web]])
                     data="Shut down requested for all devices"
                 else:
@@ -39,7 +40,7 @@ def Server():
                     data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>" + data + "</h1>"
                 if post["web"] == "all":
                     turnoff = True
-                shutdown = True
+                running = False
             elif "/localdata" in path:
                 try:
                     item = 1
@@ -64,7 +65,7 @@ def Server():
                     f = open("LocalLog_"+logfiles[i]+".dat","rb")
                     filedata.extend(pickle.load(f))
                     f.close()
-                    for device in settings.devices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("\r\n")[3]))
+                    for device in serversettings.devices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("\r\n")[3]))
                 filedata.sort(reverse=True)
                 data = ListToCsv("Date,Time,Device,Status",filedata)
                 contenttype="text/csv"
@@ -79,7 +80,7 @@ def Server():
                 deletedfiles = 0
                 if len(logfiles)>0:
                     deletedfiles+=DeleteLogFiles(post["lognum"],(post["fileage"]=="new"))
-                for device in settings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
+                for device in serversettings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
                 if post["app"]=="1":
                     data = str(deletedfiles) + " files were deleted"
                 else:
@@ -122,7 +123,7 @@ def Server():
             elif httpcode == 301: clientsocket.sendall(("HTTP/1.1 301 MOVED\r\nLocation: "+data+"\r\n\r\n").encode())
             elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
             clientsocket.shutdown(SHUT_WR)
-            if(shutdown):break
+            #if(shutdown):break
     serversocket.close()
     if turnoff: system("sudo shutdown -h 0")
 def GetPostData(data,post):
@@ -167,24 +168,29 @@ def SaveLogFileList():
     g = open("LogFileList.dat","wb")
     pickle.dump(logfiles,g)
     g.close()
-def GetLogFileList():
+"""def GetLogFileList():
     global logfiles
     try:
         g = open("LogFileList.dat","rb")
         logfiles = pickle.load(g)
         g.close()
-    except FileNotFoundError: pass
-def GetSettings(file):
+    except FileNotFoundError: pass"""
+def GetServerSettings(file):
     try:
         f = open(file,"rb")
         self = pickle.load(f)
         f.close()
     except FileNotFoundError:
         g = open(file,"wb")
-        self = Settings()
+        self = ServerSettings()
         pickle.dump(self,g)
         g.close()
     return self
-logfiles = []
-settings = GetSettings("ServerSettings.dat")
+#logfiles = []
+logprogram = Thread(target=RunLogProgram)
+#logprogram.dameon = True
+logprogram.start()
+serversettings = GetServerSettings("ServerSettings.dat")
+print("logfiles",logfiles)
 Server()
+quit()
