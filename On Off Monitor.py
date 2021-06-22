@@ -1,0 +1,342 @@
+from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
+import pickle,json
+from os import unlink, system
+from threading import Thread
+from time import sleep
+from datetime import datetime
+try: import RPi.GPIO as gpio
+except: import GPIO_Test as gpio
+from atexit import register
+
+#OnOffMonitor:
+def ListToCsv(header,item):
+    csv=header+"\n"
+    for i in range(len(item)):
+        for j in range(len(item[i])):
+            csv+=str(item[i][j])
+            if j+1 != len(item[i]): csv+=","
+        if i+1 != len(item): csv+="\n"
+    return csv
+
+#Log program:
+class Settings():
+    sleeptime = 1
+    devices = []
+    logfiles = []
+    ledswitch = None
+class Device():
+    name = ""
+    pin = 0
+    led = 0
+    def __init__(self,name_,pin_,led_):
+        self.name = name_
+        self.pin = pin_
+        self.led = led_
+def SaveSettings():
+    f = open("LogSettings.dat","wb")
+    pickle.dump(settings,f)
+    f.close()
+def Add(devicename,message):
+    log = [datetime.now().strftime("%Y/%m/%d,%H:%M:%S"),devicename,message]
+    print(ListToCsv("",[log]),end="")
+    logdata.append(log)
+    f = open("LocalLog_"+currentlogtime+".dat","wb")
+    pickle.dump(logdata,f)
+    f.close()
+def Load():
+    global logdata
+    try:
+        f = open("LocalLog_"+currentlogtime+".dat","rb")
+        logdata = pickle.load(f)
+        f.close()
+        if currentlogtime not in settings.logfiles:
+            settings.logfiles.append(currentlogtime)
+    except FileNotFoundError:
+        g = open("localLog_"+currentlogtime+".dat","wb")
+        pickle.dump([],g)
+        g.close()
+def GetLogFileList():
+    global logfiles
+    try:
+        f = open("LogFileList.dat","rb")
+        logfiles = pickle.load(f)
+        f.close()
+    except FileNotFoundError: pass
+def CheckLogName():
+    global currentlogtime, logfiles
+    now = datetime.now().strftime("%Y%m%d")
+    if(now>currentlogtime or currentlogtime == ""):
+        currentlogtime = now
+        GetLogFileList()
+        if now not in logfiles:
+            logfiles.append(now)
+            f = open("LogFileList.dat","wb")
+            pickle.dump(logfiles,f)
+            f.close()
+        Load()
+def OnOrOff(status):
+    if status: return "Off"
+    else: return "On"
+def TryInput(pin):
+    if pin == None: return True
+    else: return gpio.input(pin)
+def SetupGpio():
+    gpio.setmode(gpio.BOARD)
+    print(settings.ledswitch)
+    if settings.ledswitch != None: gpio.setup(settings.ledswitch,gpio.IN)
+    for device in settings.devices:
+        gpio.setup(device.pin,gpio.IN)
+        gpio.setup(device.led,gpio.OUT)
+        devicestatus.append(True)
+def Log() :
+    global ledswitchstate,running
+    print("On/Off Monitor Log Started\nDate,Time,Device,Status",end="")
+    while running:
+        CheckLogName()
+        for i in range(len(devicestatus)):
+            if devicestatus[i] != gpio.input(settings.devices[i].pin):
+                devicestatus[i] = gpio.input(settings.devices[i].pin)
+                if settings.ledswitch == None or not TryInput(settings.ledswitch): gpio.output(settings.devices[i].led,not devicestatus[i])
+                Add(settings.devices[i].name,OnOrOff(devicestatus[i]))
+        if settings.ledswitch != None and ledswitchstate != TryInput(settings.ledswitch):
+            ledswitchstate = gpio.input(settings.ledswitch)
+            for i in range(len(devicestatus)):
+                gpio.output(settings.devices[i].led,(not devicestatus[i] and not gpio.input(settings.ledswitch)))
+        sleep(settings.sleeptime)
+def GetSettings(file):
+    try:
+        f = open(file,"rb")
+        self = pickle.load(f)
+        f.close()
+    except FileNotFoundError:
+        print("On/Off Monitor Log Setup")
+        sleep = input("Wait time after loops (seconds, default is 1): ")
+        self = Settings()
+        if sleep != "": self.sleeptime = int(sleep)
+        leds = input("Input pin number for LED panel switch (leave blank if there is no switch): ")
+        if leds != "": self.ledswitch = int(leds)
+        self.devices = []
+        print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
+        try:
+            while 1:
+                newname = input("Name: ")
+                if newname == "" : break
+                newpin = int(input("GPIO pin number of device input: "))
+                newled = int(input("GPIO pin number of status LED: "))
+                self.devices.append(Device(newname,newpin,newled))
+        except KeyboardInterrupt: pass
+        except ValueError: pass
+        g = open(file,"wb")
+        pickle.dump(self,g)
+        g.close()
+    return self
+def Finish():
+    gpio.cleanup()
+    print("\nOn/Off Monitor exited")
+
+#Web server:
+class ServerSettings():
+    devices = []
+    port = 80
+def Server():
+    global running,turnoff
+    print("On/Off Monitor Web Started\n")
+    ipaddress = gethostbyname(gethostname())#"localhost"
+    serversocket = socket(AF_INET, SOCK_STREAM)
+    serversocket.bind((ipaddress,serversettings.port))
+    serversocket.listen(5)
+    while running:
+            #clientsocket = serversocket.accept()[0]
+            Thread(target=ServerRespond,args=serversocket.accept()).start()
+    serversocket.close()
+    if turnoff: system("sudo shutdown -h 0")
+def ServerRespond(clientsocket,other):
+    global running,turnoff
+    pieces = clientsocket.recv(5000).decode().split("\n")
+    path = ""
+    if ( len(pieces) > 0 ) :
+        try: path = pieces[0].split(" ")[1].lower()
+        except IndexError : pass
+    data = ""
+    contenttype = "text/html"
+    httpcode = 200
+    #if "log" in path: GetLogFileList() #To keep logfiles up to date
+    if path == "/":
+        f = open("HomePage.html",mode='r')
+        data=f.read()
+        f.close()
+    elif path == "/shutdown":
+        post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
+        if post["devices"] == "all":
+            for device in serversettings.devices:
+                GetData(device,"/shutdown",postlist=[["web",web]])
+            data="Shut down requested for all devices"
+        else:
+            data="Shut down"
+        if post["app"]=="0":
+            data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Shut down - On/Off Monitor</title><h1 style='font-family:\"Segoe UI\";text-align:center'>" + data + "</h1>"
+        if post["web"] == "all":
+            turnoff = True
+        running = False
+    elif "/localdata" in path:
+        try:
+            item = 1
+            if "?" in path:
+                item = int(path.split("?")[1])
+            if item > len(logfiles): data=json.dumps([])
+            else:
+                f=open("LocalLog_"+logfiles[len(logfiles)-item]+".dat",mode="r")
+                data = json.dumps(pickle.load(f))
+                f.close()
+        except IndexError: pass
+    elif path == "/log.csv":
+        post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
+        post["lognum"] = int(post["lognum"])
+        if post["lognum"] < 1: post["lognum"] = 1
+        elif post["lognum"] > len(logfiles): post["lognum"] = len(logfiles)
+        if post["fileage"]=="new": logfilein = range(len(logfiles)-1,len(logfiles)-post["lognum"]-1,-1)
+        else: logfilein = range(post["lognum"])
+        print(list(logfilein))
+        filedata = []
+        for i in logfilein:
+            f = open("LocalLog_"+logfiles[i]+".dat","rb")
+            filedata.extend(pickle.load(f))
+            f.close()
+            for device in serversettings.devices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("\r\n")[3]))
+        filedata.sort(reverse=True)
+        data = ListToCsv("Date,Time,Device,Status",filedata)
+        contenttype="text/csv"
+    elif path == "/deletelocallogs":
+        post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
+        post["lognum"] = int(post["lognum"])
+        #if len(logfiles)<post["lognum"]: data="No file deleted"#post["lognum"] = len(logfiles)
+        data = str(DeleteLogFiles(post["lognum"],(post["fileage"]=="new")))
+    elif path == "/deletelogs":
+        post = GetPostData(pieces,{"lognum":0,"fileage":"new","app":"0"})
+        post["lognum"]=int(post["lognum"])
+        deletedfiles = 0
+        if len(logfiles)>0:
+            deletedfiles+=DeleteLogFiles(post["lognum"],(post["fileage"]=="new"))
+        for device in serversettings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
+        if post["app"]=="1":
+            data = str(deletedfiles) + " files were deleted"
+        else:
+            data = "/deleted" + str(deletedfiles)
+            httpcode = 302
+    elif path == "/logfilelist":
+        data = GetPostData(pieces,{"app":"0"})
+        if data["app"]=="1": data = json.dumps(logfiles)
+        else: httpcode = 301
+    elif path == "/deletelocallog":
+        lognum = int(GetPostData(pieces,{"lognum":0})["lognum"])
+        if app:
+            item = logfiles.pop(lognum)
+            data = item[:4] + "/" + item[4:6] + "/" + item[6:8]
+            try:
+                unlink("LocalLog_"+item+".dat")
+                data += " was deleted"
+            except FileNotFoundError: data += " was not found"
+            SaveLogFileList()
+        else: httpcode = 301
+    elif path == "/logfile":
+        post = GetPostData(pieces,{"lognum":0,"app":"0"})
+        post["lognum"]=int(post["lognum"])
+        if post["app"]=="1":
+            print("lognum: ",post["lognum"])
+            if post["lognum"] < len(logfiles):
+                f = open("LocalLog_"+logfiles[post["lognum"]]+".dat","rb")
+                data = json.dumps(pickle.load(f))
+                f.close()
+            else: data = "[]"
+        else: httpcode = 301
+    elif "/deleted" in path:
+        try: deleteditems = path.split("deleted")[1]
+        except IndexError: deleteditems = "0"
+        data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
+    else:
+        data = "/"
+        httpcode = 301
+    if httpcode == 200:clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
+    elif httpcode == 301: clientsocket.sendall(("HTTP/1.1 301 MOVED\r\nLocation: "+data+"\r\n\r\n").encode())
+    elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
+    clientsocket.shutdown(SHUT_WR)
+    #if(shutdown):break
+
+def GetPostData(data,post):
+    data = data[len(data)-1].split("&")
+    for item in data:
+        item = item.split("=")
+        if item[0] in post:
+            post[item[0]]=item[1].replace("+"," ")
+    return post
+def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True = keep lognum new
+    if lognum >= len(logfiles): lognum = len(logfiles)
+    if keepmode:
+        deleteindexes = range(len(logfiles)-lognum)
+    else:
+        deleteindexes = range(lognum)
+    print(list(deleteindexes))
+    for i in deleteindexes: unlink("LocalLog_"+logfiles.pop(0)+".dat")
+    SaveLogFileList()
+    return lognum
+def GetData(address,path,postlist=[]):
+    method = "GET"
+    if len(postlist)>0: method = "POST"
+    post = ""
+    for i in range(len(postlist)):
+        post+=str(postlist[i][0])+"="+str(postlist[i][1])
+        if i+1 != len(postlist): post+="&"
+    addressparts = address.split(":")
+    if len(addressparts) == 1: addressparts.append(80)
+    clientsocket = socket(AF_INET,SOCK_STREAM)
+    clientsocket.connect((addressparts[0], int(addressparts[1])))
+    cmd = (method+' '+path+' HTTP/1.1\r\n\r\n'+post).encode()
+    clientsocket.send(cmd)
+    data = "".encode()
+    while True:
+        newdata = clientsocket.recv(512)
+        data += newdata
+        if len(newdata) < 1:
+            break
+    clientsocket.close()
+    return data.decode()
+def SaveLogFileList():
+    g = open("LogFileList.dat","wb")
+    pickle.dump(logfiles,g)
+    g.close()
+def GetServerSettings(file):
+    try:
+        f = open(file,"rb")
+        self = pickle.load(f)
+        f.close()
+    except FileNotFoundError:
+        print("On/Off Monitor Web Setup")
+        self = ServerSettings()
+        port = input("Port number (default is 80): ")
+        if port != "" : self.port = int(port)
+        print("Other device's IP addresses, including port number if necessary (press Ctrl+C or leave blank after adding all devices):")
+        try:
+            while True:
+                newip = input("> ")
+                if newip == "" : break
+                else: self.devices.append(newip)
+        except KeyboardInterrupt: pass
+        g = open(file,"wb")
+        pickle.dump(self,g)
+        g.close()
+    return self
+
+#Global variables:
+register(Finish)
+currentlogtime = ""
+logdata = []
+devicestatus = []
+ledswitchstate = False
+logfiles = []
+running = True
+turnoff = False
+settings = GetSettings("LogSettings.dat")
+serversettings = GetServerSettings("ServerSettings.dat")
+SetupGpio()
+Thread(target=Server).start()
+Thread(target=Log).start()

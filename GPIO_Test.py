@@ -14,5 +14,5 @@ def cleanup():
 def setwarnings(flag):
    print ("setwarnings:",flag)
 def input(pin):
-   #return ran(0,1) == 1
-   return True
+   return ran(0,1) == 1
+   #return True
