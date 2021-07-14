@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
 import pickle,json
 from os import unlink, system
@@ -145,16 +146,14 @@ def Server():
     serversocket = socket(AF_INET, SOCK_STREAM)
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
-    while running:
-            #clientsocket = serversocket.accept()[0]
-            Thread(target=ServerRespond,args=serversocket.accept()).start()
+    while running: Thread(target=ServerRespond,args=serversocket.accept()).start()
     serversocket.close()
     if turnoff: system("sudo shutdown -h 0")
 def ServerRespond(clientsocket,other):
     global running,turnoff
     pieces = clientsocket.recv(5000).decode().split("\n")
     path = ""
-    if ( len(pieces) > 0 ) :
+    if len(pieces) > 0:
         try: path = pieces[0].split(" ")[1].lower()
         except IndexError : pass
     data = ""
@@ -169,7 +168,7 @@ def ServerRespond(clientsocket,other):
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
             for device in serversettings.devices:
-                GetData(device,"/shutdown",postlist=[["web",web]])
+                GetData(device,"/shutdown",postlist=[["web","web"],["app","1"]])
             data="Shut down requested for all devices"
         else:
             data="Shut down"
@@ -310,17 +309,27 @@ def GetServerSettings(file):
         self = pickle.load(f)
         f.close()
     except FileNotFoundError:
+        setup = False
         print("On/Off Monitor Web Setup")
         self = ServerSettings()
         port = input("Port number (default is 80): ")
         if port != "" : self.port = int(port)
-        print("Other device's IP addresses, including port number if necessary (press Ctrl+C or leave blank after adding all devices):")
-        try:
-            while True:
-                newip = input("> ")
-                if newip == "" : break
-                else: self.devices.append(newip)
-        except KeyboardInterrupt: pass
+        if "y" in input("Set up device IP address list with CSV file? (y/n) ").lower():
+            csvpath = input("Please enter the path of the CSV file: ")
+            try:
+                csvfile = open(csvpath,"r")
+                for line in csvfile.read().split("\n"): self.devices.append(line.split(",")[0])
+                csvfile.close()
+                setup = True
+            except FileNotFoundError: print("Not a valid file path")
+        if not setup:
+            print("Other device's IP addresses, including port number if necessary (press Ctrl+C or leave blank after adding all devices):")
+            try:
+                while True:
+                    newip = input("> ")
+                    if newip == "" : break
+                    else: self.devices.append(newip)
+            except KeyboardInterrupt: pass
         g = open(file,"wb")
         pickle.dump(self,g)
         g.close()
