@@ -1,12 +1,10 @@
 import pickle
-class Settings():
-    mainpath = ""
+class ServerSettings():
     devices = []
-    port = 0
+    port = 80
 f = open("ServerSettings.dat","rb")
 settings = pickle.load(f)
 f.close()
-print(settings.mainpath)
 print(settings.devices)
 print(settings.port)
 input("Press RETURN to exit ")

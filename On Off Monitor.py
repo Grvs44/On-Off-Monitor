@@ -7,7 +7,6 @@ from time import sleep
 from datetime import datetime
 try: import RPi.GPIO as gpio
 except: import GPIO_Test as gpio
-from atexit import register
 
 #OnOffMonitor:
 def ListToCsv(header,item):
@@ -25,21 +24,23 @@ class Settings():
     devices = []
     logfiles = []
     ledswitch = None
+    newthread = False
+    outputlog = False
 class Device():
     name = ""
     pin = 0
     led = 0
     def __init__(self,name_,pin_,led_):
         self.name = name_
-        self.pin = pin_
-        self.led = led_
+        self.pin = int(pin_)
+        self.led = int(led_)
 def SaveSettings():
     f = open("LogSettings.dat","wb")
     pickle.dump(settings,f)
     f.close()
 def Add(devicename,message):
     log = [datetime.now().strftime("%Y/%m/%d,%H:%M:%S"),devicename,message]
-    print(ListToCsv("",[log]),end="")
+    if settings.outputlog: print(ListToCsv("",[log]),end="")
     logdata.append(log)
     f = open("LocalLog_"+currentlogtime+".dat","wb")
     pickle.dump(logdata,f)
@@ -90,8 +91,9 @@ def SetupGpio():
         gpio.setup(device.led,gpio.OUT)
         devicestatus.append(True)
 def Log() :
-    global ledswitchstate,running
-    print("On/Off Monitor Log Started\nDate,Time,Device,Status",end="")
+    global ledswitchstate,running,serversocket,turnoff
+    print("On/Off Monitor Log Started")
+    if settings.outputlog: print("Date,Time,Device,Status",end="")
     while running:
         CheckLogName()
         for i in range(len(devicestatus)):
@@ -104,6 +106,11 @@ def Log() :
             for i in range(len(devicestatus)):
                 gpio.output(settings.devices[i].led,(not devicestatus[i] and not gpio.input(settings.ledswitch)))
         sleep(settings.sleeptime)
+    gpio.cleanup()
+    serversocket.close()
+    print("\nOn/Off Monitor exited")
+    if turnoff: system("sudo shutdown -h 0")
+    #quit()
 def GetSettings(file):
     try:
         f = open(file,"rb")
@@ -116,39 +123,47 @@ def GetSettings(file):
         if sleep != "": self.sleeptime = int(sleep)
         leds = input("Input pin number for LED panel switch (leave blank if there is no switch): ")
         if leds != "": self.ledswitch = int(leds)
+        self.newthread = "y" in input("Start a new thread for log program (y/n) - allows the program to run in the background fully: ").lower()
+        self.outputlog = "y" in input("Output log (y/n) - not recommended if log has a new thread: ").lower()
         self.devices = []
-        print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
-        try:
-            while 1:
-                newname = input("Name: ")
-                if newname == "" : break
-                newpin = int(input("GPIO pin number of device input: "))
-                newled = int(input("GPIO pin number of status LED: "))
-                self.devices.append(Device(newname,newpin,newled))
-        except KeyboardInterrupt: pass
-        except ValueError: pass
+        setup = False
+        if "y" in input("Set up device name/input/output list with CSV file? (y/n) ").lower():
+            csvpath = input("Please enter the path of the CSV file: ")
+            try:
+                csvfile = open(csvpath,"r")
+                csvdata = csvfile.read()
+                csvfile.close()
+                if csvdata != "":
+                    for line in csvdata.split("\n"): self.devices.append(Device(*line.split(",")[:3]))
+                setup = True
+            except FileNotFoundError: print("Not a valid file path")
+        if not setup:
+            print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
+            try:
+                while 1:
+                    newname = input("Name: ")
+                    if newname == "" : break
+                    newpin = int(input("GPIO pin number of device input: "))
+                    newled = int(input("GPIO pin number of status LED: "))
+                    self.devices.append(Device(newname,newpin,newled))
+            except KeyboardInterrupt: pass
+            except ValueError: pass
         g = open(file,"wb")
         pickle.dump(self,g)
         g.close()
     return self
-def Finish():
-    gpio.cleanup()
-    print("\nOn/Off Monitor exited")
 
 #Web server:
 class ServerSettings():
     devices = []
     port = 80
 def Server():
-    global running,turnoff
+    global running,turnoff,serversocket
     print("On/Off Monitor Web Started\n")
     ipaddress = gethostbyname(gethostname())#"localhost"
-    serversocket = socket(AF_INET, SOCK_STREAM)
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
     while running: Thread(target=ServerRespond,args=serversocket.accept()).start()
-    serversocket.close()
-    if turnoff: system("sudo shutdown -h 0")
 def ServerRespond(clientsocket,other):
     global running,turnoff
     pieces = clientsocket.recv(5000).decode().split("\n")
@@ -159,7 +174,6 @@ def ServerRespond(clientsocket,other):
     data = ""
     contenttype = "text/html"
     httpcode = 200
-    #if "log" in path: GetLogFileList() #To keep logfiles up to date
     if path == "/":
         f = open("HomePage.html",mode='r')
         data=f.read()
@@ -225,7 +239,7 @@ def ServerRespond(clientsocket,other):
     elif path == "/logfilelist":
         data = GetPostData(pieces,{"app":"0"})
         if data["app"]=="1": data = json.dumps(logfiles)
-        else: httpcode = 301
+        else: httpcode = 404
     elif path == "/deletelocallog":
         lognum = int(GetPostData(pieces,{"lognum":0})["lognum"])
         if app:
@@ -236,7 +250,7 @@ def ServerRespond(clientsocket,other):
                 data += " was deleted"
             except FileNotFoundError: data += " was not found"
             SaveLogFileList()
-        else: httpcode = 301
+        else: httpcode = 404
     elif path == "/logfile":
         post = GetPostData(pieces,{"lognum":0,"app":"0"})
         post["lognum"]=int(post["lognum"])
@@ -247,16 +261,14 @@ def ServerRespond(clientsocket,other):
                 data = json.dumps(pickle.load(f))
                 f.close()
             else: data = "[]"
-        else: httpcode = 301
+        else: httpcode = 404
     elif "/deleted" in path:
         try: deleteditems = path.split("deleted")[1]
         except IndexError: deleteditems = "0"
         data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
-    else:
-        data = "/"
-        httpcode = 301
-    if httpcode == 200:clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
-    elif httpcode == 301: clientsocket.sendall(("HTTP/1.1 301 MOVED\r\nLocation: "+data+"\r\n\r\n").encode())
+    else: httpcode = 404
+    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
+    elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>\r\n\r\n".encode())
     elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
     clientsocket.shutdown(SHUT_WR)
     #if(shutdown):break
@@ -318,8 +330,10 @@ def GetServerSettings(file):
             csvpath = input("Please enter the path of the CSV file: ")
             try:
                 csvfile = open(csvpath,"r")
-                for line in csvfile.read().split("\n"): self.devices.append(line.split(",")[0])
+                csvdata = csvfile.read()
                 csvfile.close()
+                if csvdata != "":
+                    for line in csvdata.split("\n"): self.devices.append(line.split(",")[0])
                 setup = True
             except FileNotFoundError: print("Not a valid file path")
         if not setup:
@@ -336,7 +350,6 @@ def GetServerSettings(file):
     return self
 
 #Global variables:
-register(Finish)
 currentlogtime = ""
 logdata = []
 devicestatus = []
@@ -347,5 +360,7 @@ turnoff = False
 settings = GetSettings("LogSettings.dat")
 serversettings = GetServerSettings("ServerSettings.dat")
 SetupGpio()
+serversocket = socket(AF_INET, SOCK_STREAM)
 Thread(target=Server).start()
-Thread(target=Log).start()
+if settings.newthread: Thread(target=Log).start()
+else: Log()

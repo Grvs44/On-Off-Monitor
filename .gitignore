@@ -2,3 +2,6 @@
 *.dat
 __pycache__
 old
+build
+dist
+*.egg-info
