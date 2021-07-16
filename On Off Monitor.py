@@ -110,7 +110,7 @@ def Log() :
     serversocket.close()
     print("\nOn/Off Monitor exited")
     if turnoff: system("sudo shutdown -h 0")
-    #quit()
+    quit()
 def GetSettings(file):
     try:
         f = open(file,"rb")
