@@ -18,6 +18,7 @@ function Body_Onload(){
 }
 function Request(){
 	xhr.open("GET","/status/status.json",true);
+	xhr.setRequestHeader("Pragma", "no-cache");
 	xhr.send();
 	var number = Number(refresh.value);
 	if(isNaN(number) || number < 0.05){number = 10;}
