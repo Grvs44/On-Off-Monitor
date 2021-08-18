@@ -157,27 +157,45 @@ def GetSettings(file):
 class ServerSettings():
     devices = []
     port = 80
+class Page:
+    """__init__
+    Caches the contents of a file, so the file is only read once
+    path: the path of the file"""
+    def __init__(this,path):
+        this.path = path
+        this.loaded = False
+    def load(this):
+        """Returns the contents of the file"""
+        if not this.loaded:
+            f = open(this.path,mode='r')
+            this._data=f.read()
+            f.close()
+            #this.loaded = True
+        return this._data
 def Server():
-    global running,turnoff,serversocket
+    global running,turnoff,serversocket,pagecache
     print("On/Off Monitor Web Started\n")
+    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/app":Page("AppPage.html")}
     ipaddress = gethostbyname(gethostname())#"localhost"
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
     while running: Thread(target=ServerRespond,args=serversocket.accept()).start()
 def ServerRespond(clientsocket,other):
-    global running,turnoff
+    global running,turnoff,pagecache
     pieces = clientsocket.recv(5000).decode().split("\n")
     path = ""
     if len(pieces) > 0:
         try: path = pieces[0].split(" ")[1].lower()
         except IndexError : pass
-    data = ""
+    #data = ""
     contenttype = "text/html"
     httpcode = 200
-    if path == "/":
-        f = open("HomePage.html",mode='r')
-        data=f.read()
-        f.close()
+    if path in pagecache: data = pagecache[path].load()
+    elif path == "/status/status.json":
+        contenttype = "application/json"
+        data = []
+        for device in settings.devices: data.append([device.name,tern(gpio.input(device.pin),"Off","On")])
+        data = json.dumps(data)
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
@@ -222,7 +240,6 @@ def ServerRespond(clientsocket,other):
     elif path == "/deletelocallogs":
         post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
         post["lognum"] = int(post["lognum"])
-        #if len(logfiles)<post["lognum"]: data="No file deleted"#post["lognum"] = len(logfiles)
         data = str(DeleteLogFiles(post["lognum"],(post["fileage"]=="new")))
     elif path == "/deletelogs":
         post = GetPostData(pieces,{"lognum":0,"fileage":"new","app":"0"})
@@ -267,11 +284,10 @@ def ServerRespond(clientsocket,other):
         except IndexError: deleteditems = "0"
         data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
     else: httpcode = 404
-    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
+    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"\nCharset:utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
     elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>\r\n\r\n".encode())
     elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
     clientsocket.shutdown(SHUT_WR)
-    #if(shutdown):break
 
 def GetPostData(data,post):
     data = data[len(data)-1].split("&")
@@ -348,6 +364,9 @@ def GetServerSettings(file):
         pickle.dump(self,g)
         g.close()
     return self
+def tern(condition,truevalue,falsevalue):
+    if condition: return truevalue
+    else: return falsevalue
 
 #Global variables:
 currentlogtime = ""

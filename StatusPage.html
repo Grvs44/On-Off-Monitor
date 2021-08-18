@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Device Status - On/Off Monitor</title>
+    <style>
+body{
+	font-family:'Segoe UI';
+	margin:auto;
+	text-align:center;
+}
+table,tr,td,th{
+	border: 1px solid #000000;
+	border-collapse:collapse;
+	margin:inherit;
+}
+table{width:80%;}
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script type="application/javascript" src="/status/status.js"></script>
+</head>
+<body onload="Body_Onload()">
+    <h1>Live Device Status</h1>
+	<p>Refresh every <input type="number" id="statusrefresh" value="10" min="1" style="width:4em"/> seconds</p>
+	<table id="statustable"></table>
+</body>
+</html>
