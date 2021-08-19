@@ -7,7 +7,8 @@ from time import sleep
 from datetime import datetime
 try: import RPi.GPIO as gpio
 except: import GPIO_Test as gpio
-
+import os
+print("dirname",os.path.dirname(__file__))
 #OnOffMonitor:
 def ListToCsv(header,item):
     csv=header+"\n"
@@ -107,7 +108,7 @@ def Log() :
                 gpio.output(settings.devices[i].led,(not devicestatus[i] and not gpio.input(settings.ledswitch)))
         sleep(settings.sleeptime)
     gpio.cleanup()
-    serversocket.close()
+    serversocket.close() 
     print("\nOn/Off Monitor exited")
     if turnoff: system("sudo shutdown -h 0")
     quit()
@@ -158,20 +159,29 @@ class ServerSettings():
     devices = []
     port = 80
 class Page:
+    folder = os.path.dirname(__file__)
+    contenttypes = {"html":"text/html","js":"application/javascript"}
     """__init__
     Caches the contents of a file, so the file is only read once
     path: the path of the file"""
     def __init__(this,path):
         this.path = path
         this.loaded = False
+        filetype = path.split(".")
+        filetype = filetype[len(filetype)-1]
+        if filetype in this.contenttypes: this.contenttype = this.contenttypes[filetype]
+        else: this.contenttype = "text/plain"
     def load(this):
         """Returns the contents of the file"""
         if not this.loaded:
-            f = open(this.path,mode='r')
+            f = open(os.path.join(this.folder,this.path),mode='r')
             this._data=f.read()
             f.close()
-            #this.loaded = True
+            this.loaded = True
         return this._data
+    def loadct(this):
+        """Returns the contents of the file and its content type in the format (contents,contenttype)"""
+        return this.load(),this.contenttype
 def Server():
     global running,turnoff,serversocket,pagecache
     print("On/Off Monitor Web Started\n")
@@ -179,7 +189,11 @@ def Server():
     ipaddress = gethostbyname(gethostname())#"localhost"
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
-    while running: Thread(target=ServerRespond,args=serversocket.accept()).start()
+    while running:
+        try:
+            req = serversocket.accept()
+            Thread(target=ServerRespond,args=req).start()
+        except OSError: break
 def ServerRespond(clientsocket,other):
     global running,turnoff,pagecache
     pieces = clientsocket.recv(5000).decode().split("\n")
@@ -190,7 +204,7 @@ def ServerRespond(clientsocket,other):
     #data = ""
     contenttype = "text/html"
     httpcode = 200
-    if path in pagecache: data = pagecache[path].load()
+    if path in pagecache: data,contenttype = pagecache[path].loadct()
     elif path == "/status/status.json":
         contenttype = "application/json"
         data = []
@@ -284,7 +298,7 @@ def ServerRespond(clientsocket,other):
         except IndexError: deleteditems = "0"
         data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
     else: httpcode = 404
-    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"\nCharset:utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
+    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
     elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>\r\n\r\n".encode())
     elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
     clientsocket.shutdown(SHUT_WR)
