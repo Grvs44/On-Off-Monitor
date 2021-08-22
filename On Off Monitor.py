@@ -160,7 +160,7 @@ class ServerSettings():
     port = 80
 class Page:
     folder = os.path.dirname(__file__)
-    contenttypes = {"html":"text/html","js":"application/javascript"}
+    contenttypes = {"html":"text/html","js":"application/javascript","hta":"text/html"}
     """__init__
     Caches the contents of a file, so the file is only read once
     path: the path of the file"""
@@ -185,7 +185,8 @@ class Page:
 def Server():
     global running,turnoff,serversocket,pagecache
     print("On/Off Monitor Web Started\n")
-    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/app":Page("AppPage.html")}
+    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/advanced.js":Page("Advanced Status.js"),"/status/advanced":Page("Advanced Status.hta"),"/app":Page("AppPage.html")}
+    pagecache["/status/advanced.hta"] = pagecache["/status/advanced"]
     ipaddress = gethostbyname(gethostname())#"localhost"
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
@@ -209,6 +210,16 @@ def ServerRespond(clientsocket,other):
         contenttype = "application/json"
         data = []
         for device in settings.devices: data.append([device.name,tern(gpio.input(device.pin),"Off","On")])
+        data = json.dumps(data)
+    elif path == "/status/advancedstatus.json":
+        contenttype = "application/json"
+        data = []
+        for device in settings.devices: data.append(tern(gpio.input(device.pin),"Off","On"))
+        data = json.dumps(data)
+    elif path == "/status/statusnames.json":
+        contenttype = "application/json"
+        data = []
+        for device in settings.devices: data.append(device.name)
         data = json.dumps(data)
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
