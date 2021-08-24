@@ -1,14 +1,12 @@
 #! /usr/bin/env python3
 from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
-import pickle,json
-from os import unlink, system
+import pickle,json,os
 from threading import Thread
 from time import sleep
 from datetime import datetime
 try: import RPi.GPIO as gpio
 except: import GPIO_Test as gpio
-import os
-print("dirname",os.path.dirname(__file__))
+
 #OnOffMonitor:
 def ListToCsv(header,item):
     csv=header+"\n"
@@ -110,7 +108,7 @@ def Log() :
     gpio.cleanup()
     serversocket.close() 
     print("\nOn/Off Monitor exited")
-    if turnoff: system("sudo shutdown -h 0")
+    if turnoff: os.system("sudo shutdown -h 0")
     quit()
 def GetSettings(file):
     try:
@@ -177,7 +175,7 @@ class Page:
             f = open(os.path.join(this.folder,this.path),mode='r')
             this._data=f.read()
             f.close()
-            this.loaded = True
+            #this.loaded = True
         return this._data
     def loadct(this):
         """Returns the contents of the file and its content type in the format (contents,contenttype)"""
@@ -214,7 +212,7 @@ def ServerRespond(clientsocket,other):
     elif path == "/status/advancedstatus.json":
         contenttype = "application/json"
         data = []
-        for device in settings.devices: data.append(tern(gpio.input(device.pin),"Off","On"))
+        for device in settings.devices: data.append(gpio.input(device.pin))
         data = json.dumps(data)
     elif path == "/status/statusnames.json":
         contenttype = "application/json"
@@ -288,7 +286,7 @@ def ServerRespond(clientsocket,other):
             item = logfiles.pop(lognum)
             data = item[:4] + "/" + item[4:6] + "/" + item[6:8]
             try:
-                unlink("LocalLog_"+item+".dat")
+                os.unlink("LocalLog_"+item+".dat")
                 data += " was deleted"
             except FileNotFoundError: data += " was not found"
             SaveLogFileList()
@@ -328,7 +326,7 @@ def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True =
     else:
         deleteindexes = range(lognum)
     print(list(deleteindexes))
-    for i in deleteindexes: unlink("LocalLog_"+logfiles.pop(0)+".dat")
+    for i in deleteindexes: os.unlink("LocalLog_"+logfiles.pop(0)+".dat")
     SaveLogFileList()
     return lognum
 def GetData(address,path,postlist=[]):
