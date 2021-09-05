@@ -49,19 +49,19 @@ def SaveLog():
 def Load():
     global logdata
     try:
-        f = open(os.path.join(folder,"LocalLog_"+currentlogtime+".dat"),"rb")
+        f = open(os.path.join(Page.folder,"LocalLog_"+currentlogtime+".dat"),"rb")
         logdata = pickle.load(f)
         f.close()
         if currentlogtime not in settings.logfiles:
             settings.logfiles.append(currentlogtime)
     except FileNotFoundError:
-        g = open(os.path.join(folder,"localLog_"+currentlogtime+".dat"),"wb")
+        g = open(os.path.join(Page.folder,"localLog_"+currentlogtime+".dat"),"wb")
         pickle.dump([],g)
         g.close()
 def GetLogFileList():
     global logfiles
     try:
-        f = open(os.path.join(folder,"LogFileList.dat"),"rb")
+        f = open(os.path.join(Page.folder,"LogFileList.dat"),"rb")
         logfiles = pickle.load(f)
         f.close()
     except FileNotFoundError: pass
@@ -73,7 +73,7 @@ def CheckLogName():
         GetLogFileList()
         if now not in logfiles:
             logfiles.append(now)
-            f = open(os.path.join(folder,"LogFileList.dat"),"wb")
+            f = open(os.path.join(Page.folder,"LogFileList.dat"),"wb")
             pickle.dump(logfiles,f)
             f.close()
         Load()
@@ -94,6 +94,7 @@ def SetupGpio():
 def Log() :
     global ledswitchstate,running,serversocket,turnoff
     print("On/Off Monitor Log Started")
+    ExtraLogConditions.Setup(settings)
     if settings.outputlog: print("Date,Time,Device,Status",end="")
     while running:
         CheckLogName()
