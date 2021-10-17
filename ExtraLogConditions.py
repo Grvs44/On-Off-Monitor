@@ -3,7 +3,7 @@ def Setup(settings):
     global pump,othersrange
     pump,index = DeviceSearch(settings,37)
     othersrange = list(range(len(settings.devices)))
-    othersrange.remove(index)
+    othersrange.pop(index)
     print(index,othersrange)
 def Run(Add,settings,TryInput):
     #overrun = pump is on and rest are off
@@ -19,7 +19,7 @@ def DeviceSearch(settings,inpin):
     min = 0
     max = len(settings.devices)-1
     while min <= max:
-            index = int((min+max+1)/2)
+            index = int((min+max)/2)
             if settings.devices[index].pin == inpin: return settings.devices[index],index
             elif settings.devices[index].pin < inpin: min = index+1
             else: max = index-1
