@@ -1,5 +1,3 @@
-#From https://raspberrypi.stackexchange.com/questions/34119/gpio-library-on-windows-while-developing
-from random import randint as ran
 BOARD = 1
 OUT = 1
 IN = 1
@@ -13,6 +11,14 @@ def cleanup():
    print ("cleanup")
 def setwarnings(flag):
    print ("setwarnings:",flag)
-def input(pin):
-   return ran(0,1) == 1
-   #return True
+try:
+   f = open("GPIOtest.json","r")
+   import json
+   gpiotest = json.load(f)
+   f.close()
+   def input(pin):
+      return gpiotest[str(pin)]
+except FileNotFoundError:
+   from random import randint as ran
+   def input(pin):
+      return ran(0,1) == 1
