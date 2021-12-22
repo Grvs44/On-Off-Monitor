@@ -1,11 +1,12 @@
 #! /usr/bin/env python3
-from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
+from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname
 import pickle,json,os
 from threading import Thread
 from time import sleep
 from datetime import datetime
 try: import RPi.GPIO as gpio
-except: import GPIO_Test as gpio
+except ModuleNotFoundError:
+    import GPIOconsole as gpio
 import ExtraLogConditions
 
 #OnOffMonitor:
@@ -99,8 +100,9 @@ def Log() :
     while running:
         CheckLogName()
         for i in range(len(devicestatus)):
-            if devicestatus[i] != gpio.input(settings.devices[i].pin):
-                devicestatus[i] = gpio.input(settings.devices[i].pin)
+            state = gpio.input(settings.devices[i].pin)
+            if devicestatus[i] != state:
+                devicestatus[i] = state
                 if settings.ledswitch == None or not TryInput(settings.ledswitch): gpio.output(settings.devices[i].led,not devicestatus[i])
                 Add(settings.devices[i].name,OnOrOff(devicestatus[i]))
         if settings.ledswitch != None and ledswitchstate != TryInput(settings.ledswitch):
@@ -190,7 +192,7 @@ def Server():
     print("On/Off Monitor Web Started\n")
     pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/advanced.js":Page("Advanced Status.js"),"/status/advanced":Page("Advanced Status.hta"),"/app":Page("AppPage.html")}
     pagecache["/status/advanced.hta"] = pagecache["/status/advanced"]
-    ipaddress = gethostbyname(gethostname())#"localhost"
+    ipaddress = gethostname()
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
     while running:
