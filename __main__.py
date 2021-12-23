@@ -6,7 +6,8 @@ from time import sleep
 from datetime import datetime
 try: import RPi.GPIO as gpio
 except ModuleNotFoundError:
-    import GPIOconsole as gpio
+    if input("Use GPIOconsole (y) or GPIO_Test (default)? ") == "1": import GPIOconsole as gpio
+    else: import GPIO_Test as gpio
 import ExtraLogConditions
 
 #OnOffMonitor:
@@ -86,7 +87,6 @@ def TryInput(pin):
     else: return gpio.input(pin)
 def SetupGpio():
     gpio.setmode(gpio.BOARD)
-    print(settings.ledswitch)
     if settings.ledswitch != None: gpio.setup(settings.ledswitch,gpio.IN)
     for device in settings.devices:
         gpio.setup(device.pin,gpio.IN)

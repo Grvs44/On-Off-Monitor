@@ -5,3 +5,5 @@ old
 build
 dist
 *.egg-info
+*.json
+*.txt
