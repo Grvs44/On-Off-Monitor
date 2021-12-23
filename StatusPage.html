@@ -22,6 +22,14 @@ table{width:80%;}
 <body onload="Body_Onload()">
     <h1>Live Device Status</h1>
 	<p>Refresh every <input type="number" id="statusrefresh" value="10" min="1" style="width:4em"/> seconds</p>
+	<p><label for="sort">Sort by:</label>
+	<select id="sort">
+	<option>None</option>
+	<option>A-Z</option>
+	<option>Z-A</option>
+	<option>On-Off</option>
+	<option>Off-On</option>
+	</select>
 	<table id="statustable"></table>
 </body>
 </html>

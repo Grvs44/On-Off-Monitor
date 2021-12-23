@@ -74,11 +74,12 @@
 		<li>
 		<h2>Apps</h2>
 		<ul>
-		<li><a href="/status">Live status</a></li>
-		<li><a href="/status/advanced">Advanced live status</a> <a href="/status/advanced.hta" download>(Download HTML app)</a></li>
+		<li><a href="/status">Live status</a> <a href="/status.hta" download>(Download HTML app)</a></li>
+		<li><a href="/status/reduced">Reduced live status</a> <a href="/status/reduced.hta" download>(Download HTML app)</a></li>
 		<li><a href="/app">Download for Python</a></li>
 		</ul></li>
     </ul>
+<ul><li><button onclick="ResetCache()">Reset page cache</button></li></ul>
 </body>
 <script>
 function ChangeDeleteLabels(entry){
@@ -99,6 +100,9 @@ function ConfirmShutdown(){
 	btn.value=btn.value=="Shut down"?"Decline shut down":"Shut down"
 	let sub = document.getElementById("confirmsdownbutton")
 	sub.style.display=btn.value=="Shut down"?"none":"inline"
+}
+async function ResetCache(){
+	alert(await(await fetch("/resetcache")).text())
 }
 </script>
 </html>

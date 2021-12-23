@@ -182,16 +182,21 @@ class Page:
             f = open(os.path.join(this.folder,this.path),mode='r')
             this._data=f.read()
             f.close()
-            #this.loaded = True
+            this.loaded = True
         return this._data
     def loadct(this):
         """Returns the contents of the file and its content type in the format (contents,contenttype)"""
         return this.load(),this.contenttype
+    def reset(this):
+        """Resets the cache, so that changes to the file are applied"""
+        this.loaded = False
+        this._data = ""
 def Server():
     global running,turnoff,serversocket,pagecache
     print("On/Off Monitor Web Started\n")
-    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/advanced.js":Page("Advanced Status.js"),"/status/advanced":Page("Advanced Status.hta"),"/app":Page("AppPage.html")}
-    pagecache["/status/advanced.hta"] = pagecache["/status/advanced"]
+    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.hta"),"/app":Page("AppPage.html")}
+    pagecache["/status/reduced.hta"] = pagecache["/status/reduced"]
+    pagecache["/status.hta"] = pagecache["/status"]
     ipaddress = gethostname()
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
@@ -216,7 +221,7 @@ def ServerRespond(clientsocket,other):
         data = []
         for device in settings.devices: data.append([device.name,tern(gpio.input(device.pin),"Off","On")])
         data = json.dumps(data)
-    elif path == "/status/advancedstatus.json":
+    elif path == "/status/reducedstatus.json":
         contenttype = "application/json"
         data = []
         for device in settings.devices: data.append(gpio.input(device.pin))
@@ -239,6 +244,11 @@ def ServerRespond(clientsocket,other):
         if post["web"] == "all":
             turnoff = True
         running = False
+    elif path == "/resetcache":
+        for key in pagecache:
+            pagecache[key].reset()
+        data = "Page cache reset"
+        contenttype = "text/plain"
     elif "/localdata" in path:
         try:
             item = 1

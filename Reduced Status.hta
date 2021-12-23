@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Advanced Live Device Status - On/Off Monitor</title>
+<title>Reduced Live Device Status - On/Off Monitor</title>
 <style>
 body{
 	font-family:'Segoe UI';
@@ -13,19 +13,11 @@ body{
 }
 #items div{margin:auto;}
 </style>
-<script type="application/javascript" src="/status/advanced.js"></script>
+<script type="application/javascript" src="/status/reduced.js"></script>
 </head>
 <body onload="Body_Onload()">
-<h1>Advanced Live Device Status</h1>
+<h1>Reduced Live Device Status</h1>
 <p><label for="statusrefresh">Refresh every </label><input type="number" id="statusrefresh" value="10" min="1" style="width:4em"/><label for="statusrefresh"> seconds</label></p>
-<label for="sort">Sort by</label>
-<select id="sort">
-<option>None</option>
-<option>A-Z</option>
-<option>Z-A</option>
-<option>On-Off</option>
-<option>Off-On</option>
-</select>
 <div id="items"></div>
 </body>
 </html>
