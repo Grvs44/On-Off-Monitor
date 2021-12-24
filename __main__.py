@@ -194,9 +194,7 @@ class Page:
 def Server():
     global running,turnoff,serversocket,pagecache
     print("On/Off Monitor Web Started\n")
-    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.hta"),"/app":Page("AppPage.html")}
-    pagecache["/status/reduced.hta"] = pagecache["/status/reduced"]
-    pagecache["/status.hta"] = pagecache["/status"]
+    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html")}
     ipaddress = gethostname()
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
@@ -231,6 +229,10 @@ def ServerRespond(clientsocket,other):
         data = []
         for device in settings.devices: data.append(device.name)
         data = json.dumps(data)
+    elif path == "/status.hta":
+        data = pagecache["/status"].load().replace('<script type="application/javascript" src="/status/status.js"></script>',"<script>" + pagecache["/status/status.js"].load() + "</script>")
+    elif path == "/status/reduced.hta":
+        data = pagecache["/status/reduced"].load().replace('<script type="application/javascript" src="/status/reduced.js"></script>',"<script>" + pagecache["/status/reduced.js"].load() + "</script>")
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
