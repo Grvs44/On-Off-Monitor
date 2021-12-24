@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname
+from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
 import pickle,json,os
 from threading import Thread
 from time import sleep
@@ -192,10 +192,10 @@ class Page:
         this.loaded = False
         this._data = ""
 def Server():
-    global running,turnoff,serversocket,pagecache
+    global running,turnoff,serversocket,pagecache,ipaddress
     print("On/Off Monitor Web Started\n")
     pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html")}
-    ipaddress = gethostname()
+    ipaddress = gethostbyname(gethostname())
     serversocket.bind((ipaddress,serversettings.port))
     serversocket.listen(5)
     while running:
@@ -230,9 +230,9 @@ def ServerRespond(clientsocket,other):
         for device in settings.devices: data.append(device.name)
         data = json.dumps(data)
     elif path == "/status.hta":
-        data = pagecache["/status"].load().replace('<script type="application/javascript" src="/status/status.js"></script>',"<script>" + pagecache["/status/status.js"].load() + "</script>")
+        data = pagecache["/status"].load().replace('<script type="application/javascript" src="/status/status.js"></script>',"<script>" + pagecache["/status/status.js"].load() + "</script>").replace("/status/","http://" + ipaddress + "/status/")
     elif path == "/status/reduced.hta":
-        data = pagecache["/status/reduced"].load().replace('<script type="application/javascript" src="/status/reduced.js"></script>',"<script>" + pagecache["/status/reduced.js"].load() + "</script>")
+        data = pagecache["/status/reduced"].load().replace('<script type="application/javascript" src="/status/reduced.js"></script>',"<script>" + pagecache["/status/reduced.js"].load() + "</script>").replace("/status/","http://" + ipaddress + "/status/")
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
