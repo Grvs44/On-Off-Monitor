@@ -165,7 +165,7 @@ class ServerSettings():
     port = 80
 class Page:
     folder = os.path.dirname(__file__)
-    contenttypes = {"html":"text/html","js":"application/javascript","hta":"text/html"}
+    contenttypes = {"html":"text/html","js":"application/javascript"}
     """__init__
     Caches the contents of a file, so the file is only read once
     path: the path of the file"""
@@ -229,10 +229,6 @@ def ServerRespond(clientsocket,other):
         data = []
         for device in settings.devices: data.append(device.name)
         data = json.dumps(data)
-    elif path == "/status.hta":
-        data = pagecache["/status"].load().replace('<script type="application/javascript" src="/status/status.js"></script>',"<script>" + pagecache["/status/status.js"].load() + "</script>").replace("/status/","http://" + ipaddress + "/status/")
-    elif path == "/status/reduced.hta":
-        data = pagecache["/status/reduced"].load().replace('<script type="application/javascript" src="/status/reduced.js"></script>',"<script>" + pagecache["/status/reduced.js"].load() + "</script>").replace("/status/","http://" + ipaddress + "/status/")
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
