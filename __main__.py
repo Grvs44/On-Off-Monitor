@@ -6,7 +6,7 @@ from time import sleep
 from datetime import datetime
 try: import RPi.GPIO as gpio
 except ModuleNotFoundError:
-    if input("Use GPIOconsole (y) or GPIO_Test (default)? ") == "1": import GPIOconsole as gpio
+    if input("Use GPIOconsole (y) or GPIO_Test (default)? ") == "y": import GPIOconsole as gpio
     else: import GPIO_Test as gpio
 import ExtraLogConditions
 
@@ -95,7 +95,7 @@ def SetupGpio():
 def Log() :
     global ledswitchstate,running,serversocket,turnoff
     print("On/Off Monitor Log Started")
-    ExtraLogConditions.Setup(settings)
+    ExtraLogConditions.Setup(settings,gpio)
     if settings.outputlog: print("Date,Time,Device,Status",end="")
     while running:
         CheckLogName()
