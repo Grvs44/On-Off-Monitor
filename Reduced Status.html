@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Reduced Live Device Status - On/Off Monitor</title>
+<style>
+body{
+	font-family:'Segoe UI';
+	margin:auto;
+	text-align:center;
+}
+#items{
+	border: 1px solid #000000;
+}
+#items div{margin:auto;}
+</style>
+<script type="application/javascript" src="/status/reduced.js"></script>
+</head>
+<body onload="Body_Onload()">
+<h1>Reduced Live Device Status</h1>
+<p><label for="statusrefresh">Refresh every </label><input type="number" id="statusrefresh" value="10" min="1" style="width:4em"/><label for="statusrefresh"> seconds</label></p>
+<div id="items"></div>
+</body>
+</html>
