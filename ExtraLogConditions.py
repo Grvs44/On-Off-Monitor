@@ -18,14 +18,9 @@ def Run(Add,settings,TryInput):
         Add("Pump","Overrun ended")
         pinout(26,False)
 def DeviceSearch(settings,inpin):
-    index = 0
-    min = 0
-    max = len(settings.devices)-1
-    while min <= max:
-            index = int((min+max)/2)
-            if settings.devices[index].pin == inpin: return settings.devices[index],index
-            elif settings.devices[index].pin < inpin: min = index+1
-            else: max = index-1
+    for i in range(len(settings.devices)):
+            if settings.devices[i].pin == inpin:
+                return settings.devices[i],i
     raise Exception("Input pin not in device list")
 def OthersOff(settings,TryInput):
     for i in othersrange:
