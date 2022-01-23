@@ -8,7 +8,6 @@ try: import RPi.GPIO as gpio
 except ModuleNotFoundError:
     if input("Use GPIOconsole (y) or GPIO_Test (default)? ") == "y": import GPIOconsole as gpio
     else: import GPIO_Test as gpio
-import ExtraLogConditions
 
 #OnOffMonitor:
 def ListToCsv(header,item):
@@ -109,7 +108,7 @@ def Log() :
             ledswitchstate = gpio.input(settings.ledswitch)
             for i in range(len(devicestatus)):
                 gpio.output(settings.devices[i].led,(not devicestatus[i] and not gpio.input(settings.ledswitch)))
-        ExtraLogConditions.Run(Add,settings,TryInput)
+        if settings.extralogconditions: ExtraLogConditions.Run(Add,settings,TryInput)
         SaveLog()
         sleep(settings.sleeptime)
     gpio.cleanup()
@@ -118,6 +117,7 @@ def Log() :
     if turnoff: os.system("sudo shutdown -h 0")
     quit()
 def GetSettings(file):
+    global ExtraLogConditions
     try:
         f = open(os.path.join(Page.folder,file),"rb")
         self = pickle.load(f)
@@ -129,6 +129,9 @@ def GetSettings(file):
         if sleep != "": self.sleeptime = int(sleep)
         leds = input("Input pin number for LED panel switch (leave blank if there is no switch): ")
         if leds != "": self.ledswitch = int(leds)
+        self.shutdownpin = IntValOrNone(input("Shutdown button pin (leave blank if there is no button): "))
+        self.dataled = IntValOrNone(input("Data LED pin (leave blank if there is no LED): "))
+        self.extralogconditions = IntValOrNone(input("ExtraLogConditions script number (leave blank if there are no ExtraLogConditions): "))
         self.newthread = "y" in input("Start a new thread for log program (y/n) - allows the program to run in the background fully: ").lower()
         self.outputlog = "y" in input("Output log (y/n) - not recommended if log has a new thread: ").lower()
         self.devices = []
@@ -157,7 +160,15 @@ def GetSettings(file):
         g = open(os.path.join(Page.folder,file),"wb")
         pickle.dump(self,g)
         g.close()
+    if self.extralogconditions:
+        ExtraLogConditions = __import__("ExtraLogConditions_"+str(self.extralogconditions))
     return self
+
+def IntValOrNone(value):
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 #Web server:
 class ServerSettings():
