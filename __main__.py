@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
-from socket import socket,AF_INET,SOCK_STREAM,SHUT_WR,gethostname,gethostbyname
-import pickle,json,os
+import json
+from server import *
+from settings import *
 from threading import Thread
 from time import sleep
 from datetime import datetime
@@ -9,36 +10,6 @@ except ModuleNotFoundError:
     if input("Use GPIOconsole (y) or GPIO_Test (default)? ") == "y": import GPIOconsole as gpio
     else: import GPIO_Test as gpio
 
-#OnOffMonitor:
-def ListToCsv(header,item):
-    csv=header+"\n"
-    for i in range(len(item)):
-        for j in range(len(item[i])):
-            csv+=str(item[i][j])
-            if j+1 != len(item[i]): csv+=","
-        if i+1 != len(item): csv+="\n"
-    return csv
-
-#Log program:
-class Settings():
-    sleeptime = 1
-    devices = []
-    logfiles = []
-    ledswitch = None
-    newthread = False
-    outputlog = False
-class Device():
-    name = ""
-    pin = 0
-    led = 0
-    def __init__(self,name_,pin_,led_):
-        self.name = name_
-        self.pin = int(pin_)
-        self.led = int(led_)
-def SaveSettings():
-    f = open(os.path.join(Page.folder,"LogSettings.dat"),"wb")
-    pickle.dump(settings,f)
-    f.close()
 def Add(devicename,message):
     log = [datetime.now().strftime("%Y/%m/%d,%H:%M:%S"),devicename,message]
     if settings.outputlog: print(ListToCsv("",[log]),end="")
@@ -110,104 +81,32 @@ def Log() :
                 gpio.output(settings.devices[i].led,(not devicestatus[i] and not gpio.input(settings.ledswitch)))
         if settings.extralogconditions: ExtraLogConditions.Run(Add,settings,TryInput)
         SaveLog()
+        if not TryInput(settings.shutdownpin):
+            break
         sleep(settings.sleeptime)
     gpio.cleanup()
     serversocket.close() 
-    print("\nOn/Off Monitor exited")
+    print("On/Off Monitor exited")
     if turnoff: os.system("sudo shutdown -h 0")
     quit()
-def GetSettings(file):
+def GetSettings():
     global ExtraLogConditions
     try:
-        f = open(os.path.join(Page.folder,file),"rb")
-        self = pickle.load(f)
+        f = open(os.path.join(Page.folder,"Settings.dat"),"rb")
+        settings = pickle.load(f)
         f.close()
     except FileNotFoundError:
-        print("On/Off Monitor Log Setup")
-        sleep = input("Wait time after loops (seconds, default is 1): ")
-        self = Settings()
-        if sleep != "": self.sleeptime = int(sleep)
-        leds = input("Input pin number for LED panel switch (leave blank if there is no switch): ")
-        if leds != "": self.ledswitch = int(leds)
-        self.shutdownpin = IntValOrNone(input("Shutdown button pin (leave blank if there is no button): "))
-        self.dataled = IntValOrNone(input("Data LED pin (leave blank if there is no LED): "))
-        self.extralogconditions = IntValOrNone(input("ExtraLogConditions script number (leave blank if there are no ExtraLogConditions): "))
-        self.newthread = "y" in input("Start a new thread for log program (y/n) - allows the program to run in the background fully: ").lower()
-        self.outputlog = "y" in input("Output log (y/n) - not recommended if log has a new thread: ").lower()
-        self.devices = []
-        setup = False
-        if "y" in input("Set up device name/input/output list with CSV file? (y/n) ").lower():
-            csvpath = input("Please enter the path of the CSV file: ")
-            try:
-                csvfile = open(csvpath,"r")
-                csvdata = csvfile.read()
-                csvfile.close()
-                if csvdata != "":
-                    for line in csvdata.split("\n"): self.devices.append(Device(*line.split(",")[:3]))
-                setup = True
-            except FileNotFoundError: print("Not a valid file path")
-        if not setup:
-            print("Other devices connected to this device (press Ctrl+C or leave blank after adding all devices):")
-            try:
-                while 1:
-                    newname = input("Name: ")
-                    if newname == "" : break
-                    newpin = int(input("GPIO pin number of device input: "))
-                    newled = int(input("GPIO pin number of status LED: "))
-                    self.devices.append(Device(newname,newpin,newled))
-            except KeyboardInterrupt: pass
-            except ValueError: pass
-        g = open(os.path.join(Page.folder,file),"wb")
-        pickle.dump(self,g)
-        g.close()
-    if self.extralogconditions:
-        ExtraLogConditions = __import__("ExtraLogConditions_"+str(self.extralogconditions))
-    return self
+        settings = Settings()
+    if settings.extralogconditions:
+        ExtraLogConditions = __import__("ExtraLogConditions_"+str(settings.extralogconditions))
+    return settings
 
-def IntValOrNone(value):
-    try:
-        return int(value)
-    except ValueError:
-        return None
-
-#Web server:
-class ServerSettings():
-    devices = []
-    port = 80
-class Page:
-    folder = os.path.dirname(__file__)
-    contenttypes = {"html":"text/html","js":"application/javascript"}
-    """__init__
-    Caches the contents of a file, so the file is only read once
-    path: the path of the file"""
-    def __init__(this,path):
-        this.path = path
-        this.loaded = False
-        filetype = path.split(".")
-        filetype = filetype[len(filetype)-1]
-        if filetype in this.contenttypes: this.contenttype = this.contenttypes[filetype]
-        else: this.contenttype = "text/plain"
-    def load(this):
-        """Returns the contents of the file"""
-        if not this.loaded:
-            f = open(os.path.join(this.folder,this.path),mode='r')
-            this._data=f.read()
-            f.close()
-            this.loaded = True
-        return this._data
-    def loadct(this):
-        """Returns the contents of the file and its content type in the format (contents,contenttype)"""
-        return this.load(),this.contenttype
-    def reset(this):
-        """Resets the cache, so that changes to the file are applied"""
-        this.loaded = False
-        this._data = ""
 def Server():
     global running,turnoff,serversocket,pagecache,ipaddress
-    print("On/Off Monitor Web Started\n")
+    print("On/Off Monitor Web Started")
     pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html")}
-    ipaddress = gethostbyname(gethostname())
-    serversocket.bind((ipaddress,serversettings.port))
+    ipaddress = gethostname()
+    serversocket.bind((ipaddress,settings.port))
     serversocket.listen(5)
     while running:
         try:
@@ -216,12 +115,13 @@ def Server():
         except OSError: break
 def ServerRespond(clientsocket,other):
     global running,turnoff,pagecache
+    if settings.dataled:
+        gpio.output(settings.dataled,True)
     pieces = clientsocket.recv(5000).decode().split("\n")
     path = ""
     if len(pieces) > 0:
         try: path = pieces[0].split(" ")[1].lower()
         except IndexError : pass
-    #data = ""
     contenttype = "text/html"
     httpcode = 200
     if path in pagecache: data,contenttype = pagecache[path].loadct()
@@ -243,7 +143,7 @@ def ServerRespond(clientsocket,other):
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
-            for device in serversettings.devices:
+            for device in settings.networkdevices:
                 GetData(device,"/shutdown",postlist=[["web","web"],["app","1"]])
             data="Shut down requested for all devices"
         else:
@@ -282,7 +182,7 @@ def ServerRespond(clientsocket,other):
             f = open("LocalLog_"+logfiles[i]+".dat","rb")
             filedata.extend(pickle.load(f))
             f.close()
-            for device in serversettings.devices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("\r\n")[3]))
+            for device in settings.networkdevices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("")[3]))
         filedata.sort(reverse=True)
         data = ListToCsv("Date,Time,Device,Status",filedata)
         contenttype="text/csv"
@@ -296,7 +196,7 @@ def ServerRespond(clientsocket,other):
         deletedfiles = 0
         if len(logfiles)>0:
             deletedfiles+=DeleteLogFiles(post["lognum"],(post["fileage"]=="new"))
-        for device in serversettings.devices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("\r\n")[3])
+        for device in settings.networkdevices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("")[3])
         if post["app"]=="1":
             data = str(deletedfiles) + " files were deleted"
         else:
@@ -337,14 +237,9 @@ def ServerRespond(clientsocket,other):
     elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>\r\n\r\n".encode())
     elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
     clientsocket.shutdown(SHUT_WR)
+    if settings.dataled:
+        gpio.output(settings.dataled,False)
 
-def GetPostData(data,post):
-    data = data[len(data)-1].split("&")
-    for item in data:
-        item = item.split("=")
-        if item[0] in post:
-            post[item[0]]=item[1].replace("+"," ")
-    return post
 def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True = keep lognum new
     if lognum >= len(logfiles): lognum = len(logfiles)
     if keepmode:
@@ -355,69 +250,11 @@ def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True =
     for i in deleteindexes: os.unlink("LocalLog_"+logfiles.pop(0)+".dat")
     SaveLogFileList()
     return lognum
-def GetData(address,path,postlist=[]):
-    method = "GET"
-    if len(postlist)>0: method = "POST"
-    post = ""
-    for i in range(len(postlist)):
-        post+=str(postlist[i][0])+"="+str(postlist[i][1])
-        if i+1 != len(postlist): post+="&"
-    addressparts = address.split(":")
-    if len(addressparts) == 1: addressparts.append(80)
-    clientsocket = socket(AF_INET,SOCK_STREAM)
-    clientsocket.connect((addressparts[0], int(addressparts[1])))
-    cmd = (method+' '+path+' HTTP/1.1\r\n\r\n'+post).encode()
-    clientsocket.send(cmd)
-    data = "".encode()
-    while True:
-        newdata = clientsocket.recv(512)
-        data += newdata
-        if len(newdata) < 1:
-            break
-    clientsocket.close()
-    return data.decode()
 def SaveLogFileList():
     g = open(os.path.join(Page.folder,"LogFileList.dat"),"wb")
     pickle.dump(logfiles,g)
     g.close()
-def GetServerSettings(file):
-    try:
-        f = open(os.path.join(Page.folder,file),"rb")
-        self = pickle.load(f)
-        f.close()
-    except FileNotFoundError:
-        setup = False
-        print("On/Off Monitor Web Setup")
-        self = ServerSettings()
-        port = input("Port number (default is 80): ")
-        if port != "" : self.port = int(port)
-        if "y" in input("Set up device IP address list with CSV file? (y/n) ").lower():
-            csvpath = input("Please enter the path of the CSV file: ")
-            try:
-                csvfile = open(os.path.join(Page.folder,csvpath),"r")
-                csvdata = csvfile.read()
-                csvfile.close()
-                if csvdata != "":
-                    for line in csvdata.split("\n"): self.devices.append(line.split(",")[0])
-                setup = True
-            except FileNotFoundError: print("Not a valid file path")
-        if not setup:
-            print("Other device's IP addresses, including port number if necessary (press Ctrl+C or leave blank after adding all devices):")
-            try:
-                while True:
-                    newip = input("> ")
-                    if newip == "" : break
-                    else: self.devices.append(newip)
-            except KeyboardInterrupt: pass
-        g = open(file,"wb")
-        pickle.dump(self,g)
-        g.close()
-    return self
-def tern(condition,truevalue,falsevalue):
-    if condition: return truevalue
-    else: return falsevalue
 
-#Global variables:
 currentlogtime = ""
 logdata = []
 devicestatus = []
@@ -425,8 +262,7 @@ ledswitchstate = False
 logfiles = []
 running = True
 turnoff = False
-settings = GetSettings("LogSettings.dat")
-serversettings = GetServerSettings("ServerSettings.dat")
+settings = GetSettings()
 SetupGpio()
 serversocket = socket(AF_INET, SOCK_STREAM)
 Thread(target=Server).start()
