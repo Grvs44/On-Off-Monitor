@@ -3,10 +3,8 @@
 <head>
 <meta charset="utf-8">
     <title>On/Off Monitor Home</title>
-    <style>
-        body{font-family:'Segoe UI';}
-        ul{list-style-type:none;}
-    </style>
+    <link href="/styles.css" rel="stylesheet" type="text/css"/>
+	<script type="application/javascript" src="/script.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
@@ -81,28 +79,4 @@
     </ul>
 <ul><li><button onclick="ResetCache()">Reset page cache</button></li></ul>
 </body>
-<script>
-function ChangeDeleteLabels(entry){
-	document.getElementById("deletelabel1").innerText = document.getElementById("deletelabel2").innerText = entry.value
-	let dbtn = document.getElementById("deletebutton")
-	dbtn.disabled  = (entry.value=="")
-	dbtn.value = "Delete"
-	document.getElementById("confirmdeletebutton").style.display = "none"
-}
-function ConfirmDelete(){
-	let btn = document.getElementById("deletebutton")
-	btn.value = btn.value=="Delete"?"Decline delete":"Delete"
-	let sub = document.getElementById("confirmdeletebutton")
-	sub.style.display=sub.style.display=="inline"?"none":"inline"
-}
-function ConfirmShutdown(){
-	let btn = document.getElementById("sdownbutton")
-	btn.value=btn.value=="Shut down"?"Decline shut down":"Shut down"
-	let sub = document.getElementById("confirmsdownbutton")
-	sub.style.display=btn.value=="Shut down"?"none":"inline"
-}
-async function ResetCache(){
-	alert(await(await fetch("/resetcache")).text())
-}
-</script>
 </html>

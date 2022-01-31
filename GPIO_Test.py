@@ -17,7 +17,8 @@ try:
    gpiotest = json.load(f)
    f.close()
    def input(pin):
-      return gpiotest[str(pin)]
+      try: return gpiotest[str(pin)]
+      except KeyError: return True
 except FileNotFoundError:
    from random import randint as ran
    def input(pin):

@@ -94,7 +94,7 @@ def IntValOrNone(value):
 
 class Page:
     folder = os.path.dirname(__file__)
-    contenttypes = {"html":"text/html","js":"application/javascript"}
+    contenttypes = {"html":"text/html","js":"application/javascript","css":"text/css"}
     """__init__
     Caches the contents of a file, so the file is only read once
     path: the path of the file"""
@@ -105,6 +105,8 @@ class Page:
         filetype = filetype[len(filetype)-1]
         if filetype in this.contenttypes: this.contenttype = this.contenttypes[filetype]
         else: this.contenttype = "text/plain"
+        if filetype == "js" or filetype == "css": this.cachecontrol = "max-age=31536000, immutable"
+        else: this.cachecontrol = "no-cache"
     def load(this):
         """Returns the contents of the file"""
         if not this.loaded:
@@ -113,9 +115,9 @@ class Page:
             f.close()
             this.loaded = True
         return this._data
-    def loadct(this):
+    def loadh(this):
         """Returns the contents of the file and its content type in the format (contents,contenttype)"""
-        return this.load(),this.contenttype
+        return this.load(),this.contenttype,this.cachecontrol
     def reset(this):
         """Resets the cache, so that changes to the file are applied"""
         this.loaded = False

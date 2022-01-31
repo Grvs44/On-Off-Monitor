@@ -104,7 +104,7 @@ def GetSettings():
 def Server():
     global running,turnoff,serversocket,pagecache,ipaddress
     print("On/Off Monitor Web Started")
-    pagecache = {"/":Page("HomePage.html"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html")}
+    pagecache = {"/":Page("HomePage.html"),"/styles.css":Page("Styles.css"),"/script.js":Page("HomeScript.js"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html")}
     ipaddress = gethostname()
     serversocket.bind((ipaddress,settings.port))
     serversocket.listen(5)
@@ -124,7 +124,8 @@ def ServerRespond(clientsocket,other):
         except IndexError : pass
     contenttype = "text/html"
     httpcode = 200
-    if path in pagecache: data,contenttype = pagecache[path].loadct()
+    cachecontrol = "no-cache"
+    if path in pagecache: data,contenttype,cachecontrol = pagecache[path].loadh()
     elif path == "/status/status.json":
         contenttype = "application/json"
         data = []
@@ -233,7 +234,7 @@ def ServerRespond(clientsocket,other):
         except IndexError: deleteditems = "0"
         data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
     else: httpcode = 404
-    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\n\r\n"+data+"\r\n\r\n").encode())
+    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: " + cachecontrol + "\r\n\r\n"+data+"\r\n\r\n").encode())
     elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>\r\n\r\n".encode())
     elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
     clientsocket.shutdown(SHUT_WR)

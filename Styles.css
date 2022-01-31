@@ -1,0 +1,8 @@
+body{
+font-family:'Segoe UI';
+cursor:default;
+user-select:none;
+-webkit-user-select:none;
+}
+ul{list-style-type:none;}
+input[type="submit"],input[type="button"],input[type="radio"],button{cursor:pointer;}
