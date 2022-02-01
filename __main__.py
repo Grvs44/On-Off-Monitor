@@ -121,6 +121,7 @@ def ServerRespond(clientsocket,other):
         gpio.output(settings.dataled,True)
     pieces = clientsocket.recv(5000).decode().split("\n")
     path = ""
+    print(pieces)
     if len(pieces) > 0:
         try: path = pieces[0].split(" ")[1].lower()
         except IndexError : pass
@@ -143,6 +144,14 @@ def ServerRespond(clientsocket,other):
         data = []
         for device in settings.devices: data.append(device.name)
         data = json.dumps(data)
+    elif path == "/pinaccess":
+        post = GetPostData(pieces,{"pin":None,"state":True,"id":""})
+        try:
+            post["pin"] = int(post["pin"])
+            post["state"] = bool(post["state"])
+            if post["pin"] in settings.pinaccess[post["identifier"]]:
+                gpio.output(post["pin"],post["state"])
+        except (ValueError,TypeError,KeyError): httpcode = 404
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":

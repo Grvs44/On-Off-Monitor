@@ -14,6 +14,7 @@ class Settings:
         this.ledswitch = None
         this.networkdevices = [] # server
         this.port = 80 # server
+        this.pinaccess = {}
 
         print("On/Off Monitor Log Setup")
         sleep = input("Wait time after loops (seconds, default is 1): ")
@@ -77,6 +78,27 @@ class Settings:
                     if newip == "" : break
                     else: this.networkdevices.append(newip)
             except KeyboardInterrupt: pass
+        if len(this.networkdevices) != 0:
+            print("Other device access IDs, for pin access on this device (press Ctrl+C or leave blank after adding all IDs:")
+            while True:
+                try:
+                    id = input("Device ID: ")
+                    if id == "":
+                        break
+                    else:
+                        this.pinaccess[id] = []
+                        print("Enter pins for this device (integers/blank only):")
+                        try:
+                            while True:
+                                pin = IntValOrNone(input("Pin: "))
+                                if pin == "":
+                                    break
+                                else:
+                                    this.pinaccess[id].append(pin)
+                        except KeyboardInterrupt:
+                            break
+                except KeyboardInterrupt:
+                    break
         this.save()
     def save(this):
         f = open(os.path.join(Page.folder,"Settings.dat"),"wb")

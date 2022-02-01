@@ -13,8 +13,8 @@ if os.path.isfile("Settings.dat"):
             key = input("Chosen key (or else to save and exit): ")
             if key in settings.__dict__:
                 print("Current value: " + str(settings.__dict__[key]))
-                if type(settings.__dict__[key]) == list:
-                    index = int(input("Enter index to edit: "))
+                if type(settings.__dict__[key]) in (list,dict):
+                    index = int(input("Enter index/key to edit: "))
                     settings.__dict__[key][index] = eval(input("New value (enter as Python): "))
                 else:
                     settings.__dict__[key] = eval(input("New value (enter as Python): "))
