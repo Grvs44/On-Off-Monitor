@@ -22,7 +22,13 @@ class Settings:
         if leds != "": this.ledswitch = int(leds)
         this.shutdownpin = IntValOrNone(input("Shutdown button pin (leave blank if there is no button): "))
         this.dataled = IntValOrNone(input("Data LED pin (leave blank if there is no LED): "))
-        this.extralogconditions = IntValOrNone(input("ExtraLogConditions script number (leave blank if there are no ExtraLogConditions): "))
+        this.extralogconditions = input("Extra log conditions script (*.py,*.pyw,*.pyc file) path (leave blank if there isn't a script): ")
+        while this.extralogconditions != "" and not os.path.isfile(os.path.abspath(this.extralogconditions)):
+            this.extralogconditions = input("Please enter a valid path: ")
+        if this.extralogconditions == "":
+            this.extralogconditions = None
+        else:
+            this.extralogconditions = list(os.path.split(os.path.splitext(this.extralogconditions)[0]))
         this.newthread = "y" in input("Start a new thread for log program (y/n) - allows the program to run in the background fully: ").lower()
         this.outputlog = "y" in input("Output log (y/n) - not recommended if log has a new thread: ").lower()
         this.devices = []

@@ -98,7 +98,9 @@ def GetSettings():
     except FileNotFoundError:
         settings = Settings()
     if settings.extralogconditions:
-        ExtraLogConditions = __import__("ExtraLogConditions_"+str(settings.extralogconditions))
+        from sys import path
+        path.append(settings.extralogconditions[0])
+        ExtraLogConditions = __import__(settings.extralogconditions[1])
     return settings
 
 def Server():
