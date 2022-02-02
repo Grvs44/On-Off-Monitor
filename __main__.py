@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 import json
-from server import *
 from settings import *
 from threading import Thread
 from time import sleep
@@ -58,10 +57,13 @@ def TryInput(pin):
 def SetupGpio():
     gpio.setmode(gpio.BOARD)
     if settings.ledswitch != None: gpio.setup(settings.ledswitch,gpio.IN)
+    if settings.dataled != None: gpio.setup(settings.dataled,gpio.OUT)
     for device in settings.devices:
         gpio.setup(device.pin,gpio.IN)
         gpio.setup(device.led,gpio.OUT)
         devicestatus.append(True)
+    for name in settings.pinnames:
+        gpio.setup(settings.pinnames[name],gpio.OUT)
 def Log() :
     global ledswitchstate,running,serversocket,turnoff
     print("On/Off Monitor Log Started")
@@ -121,7 +123,6 @@ def ServerRespond(clientsocket,other):
         gpio.output(settings.dataled,True)
     pieces = clientsocket.recv(5000).decode().split("\n")
     path = ""
-    print(pieces)
     if len(pieces) > 0:
         try: path = pieces[0].split(" ")[1].lower()
         except IndexError : pass
@@ -146,12 +147,12 @@ def ServerRespond(clientsocket,other):
         data = json.dumps(data)
     elif path == "/pinaccess":
         post = GetPostData(pieces,{"pin":None,"state":True,"id":""})
-        try:
-            post["pin"] = int(post["pin"])
-            post["state"] = bool(post["state"])
-            if post["pin"] in settings.pinaccess[post["identifier"]]:
-                gpio.output(post["pin"],post["state"])
-        except (ValueError,TypeError,KeyError): httpcode = 404
+        post["pin"] = post["pin"]
+        post["state"] = post["state"].lower() == "1"
+        if post["id"] in settings.pinaccess and post["pin"] in settings.pinaccess[post["id"]]:
+            gpio.output(settings.pinnames[post["pin"]],post["state"])
+            data = "1"
+        else: data = "0"
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":

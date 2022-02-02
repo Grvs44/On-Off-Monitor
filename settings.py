@@ -1,4 +1,5 @@
 import os,pickle
+from server import *
 def ListToCsv(header,item):
     csv=header+"\n"
     for i in range(len(item)):
@@ -15,6 +16,8 @@ class Settings:
         this.networkdevices = [] # server
         this.port = 80 # server
         this.pinaccess = {}
+        this.pinnames = {}
+        this.deviceid = None
 
         print("On/Off Monitor Log Setup")
         sleep = input("Wait time after loops (seconds, default is 1): ")
@@ -90,20 +93,37 @@ class Settings:
                         print("Enter pins for this device (integers/blank only):")
                         try:
                             while True:
-                                pin = IntValOrNone(input("Pin: "))
-                                if pin == "":
+                                name = input("Pin name: ")
+                                if name == "":
                                     break
                                 else:
-                                    this.pinaccess[id].append(pin)
+                                    if name not in this.pinnames:
+                                        pin = IntValOrNone(input("Pin number corresponding to this name: "))
+                                        if pin == None:
+                                            break
+                                        else:
+                                            this.pinaccess[id].append(name)
+                                            this.pinnames[name] = pin
                         except KeyboardInterrupt:
                             break
                 except KeyboardInterrupt:
                     break
+        deviceid = input("This device's ID (leave blank if not accessing pins on other devices): ")
+        if deviceid != "": this.deviceid = deviceid
         this.save()
     def save(this):
         f = open(os.path.join(Page.folder,"Settings.dat"),"wb")
         pickle.dump(this,f)
         f.close()
+    def sendpinrequest(this,device,pinname,state):
+        """device: the address of the device
+        pinname: the name of the pin, entered when setting up the device
+        state: True for off, False for on"""
+        try:
+            return GetData(device,"/pinaccess",[["pin",pinname],["state",tern(state,"1","0")],["id",this.deviceid]]).split("\r\n\r\n")[1] == "1"
+        except KeyError as e:
+            raise KeyError("Device or pin name doesn't exist") from e
+            
 class Device:
     def __init__(self,name,pin,led):
         self.name = name
