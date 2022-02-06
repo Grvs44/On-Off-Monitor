@@ -108,8 +108,8 @@ class Settings:
                             break
                 except KeyboardInterrupt:
                     break
-        deviceid = input("This device's ID (leave blank if not accessing pins on other devices): ")
-        if deviceid != "": this.deviceid = deviceid
+            deviceid = input("This device's ID (leave blank if not accessing pins on other devices): ")
+            if deviceid != "": this.deviceid = deviceid
         this.save()
     def save(this):
         f = open(os.path.join(Page.folder,"Settings.dat"),"wb")
@@ -120,6 +120,7 @@ class Settings:
         pinname: the name of the pin, entered when setting up the device
         state: True for off, False for on"""
         try:
+            if type(device) == int: device = this.networkdevices[device]
             return GetData(device,"/pinaccess",[["pin",pinname],["state",tern(state,"1","0")],["id",this.deviceid]]).split("\r\n\r\n")[1] == "1"
         except KeyError as e:
             raise KeyError("Device or pin name doesn't exist") from e
@@ -129,6 +130,8 @@ class Device:
         self.name = name
         self.pin = int(pin)
         self.led = int(led)
+    def __str__(self):
+        return "%s (Pin: %i, LED: %i)" % (self.name,self.pin,self.led)
 
 def tern(condition,truevalue,falsevalue):
     if condition: return truevalue

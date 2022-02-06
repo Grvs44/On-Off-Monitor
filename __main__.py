@@ -148,7 +148,7 @@ def ServerRespond(clientsocket,other):
     elif path == "/pinaccess":
         post = GetPostData(pieces,{"pin":None,"state":True,"id":""})
         post["pin"] = post["pin"]
-        post["state"] = post["state"].lower() == "1"
+        post["state"] = post["state"] == "1"
         if post["id"] in settings.pinaccess and post["pin"] in settings.pinaccess[post["id"]]:
             gpio.output(settings.pinnames[post["pin"]],post["state"])
             data = "1"
