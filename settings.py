@@ -13,7 +13,7 @@ class Settings:
         this.sleeptime = 1
         this.logfiles = []
         this.ledswitch = None
-        this.networkdevices = [] # server
+        this.networkdevices = {}
         this.port = 80 # server
         this.pinaccess = {}
         this.pinnames = {}
@@ -70,7 +70,7 @@ class Settings:
                 csvdata = csvfile.read()
                 csvfile.close()
                 if csvdata != "":
-                    for line in csvdata.split(""): this.networkdevices.append(line.split(",")[0])
+                    for line in csvdata.split(""): this.networkdevices[line.split(",")[0]] = int(line.split(",")[1])
                 setup = True
             except FileNotFoundError: print("Not a valid file path")
         if not setup:
@@ -79,7 +79,8 @@ class Settings:
                 while True:
                     newip = input("> ")
                     if newip == "" : break
-                    else: this.networkdevices.append(newip)
+                    else:
+                        this.networkdevices[newip] = IntValOrNone(input("Status LED for this device (leave blank if none): "))
             except KeyboardInterrupt: pass
         if len(this.networkdevices) != 0:
             print("Other device access IDs, for pin access on this device (press Ctrl+C or leave blank after adding all IDs:")

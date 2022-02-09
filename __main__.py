@@ -64,10 +64,13 @@ def SetupGpio():
         devicestatus.append(True)
     for name in settings.pinnames:
         gpio.setup(settings.pinnames[name],gpio.OUT)
+    for device in settings.networkdevices:
+        if settings.networkdevices[device] != None:
+            gpio.setup(settings.networkdevices[device],gpio.OUT)
 def Log() :
     global ledswitchstate,running,serversocket,turnoff
     print("On/Off Monitor Log Started")
-    ExtraLogConditions.Setup(settings,gpio)
+    if settings.extralogconditions != None: ExtraLogConditions.Setup(settings,gpio)
     if settings.outputlog: print("Date,Time,Device,Status",end="")
     while running:
         CheckLogName()
@@ -151,6 +154,12 @@ def ServerRespond(clientsocket,other):
         post["state"] = post["state"] == "1"
         if post["id"] in settings.pinaccess and post["pin"] in settings.pinaccess[post["id"]]:
             gpio.output(settings.pinnames[post["pin"]],post["state"])
+            data = "1"
+        else: data = "0"
+    elif path == "/netdevicestatus":
+        post = GetPostData(pieces,{"ipaddress":"","state":"0"})
+        if post["ipaddress"] in settings.networkdevices:
+            gpio.output(settings.networkdevices[post["ipaddress"]],post["state"] == "1")
             data = "1"
         else: data = "0"
     elif path == "/shutdown":
