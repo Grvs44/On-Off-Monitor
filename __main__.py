@@ -162,6 +162,8 @@ def ServerRespond(clientsocket,other):
             gpio.output(settings.networkdevices[post["ipaddress"]],post["state"] == "1")
             data = "1"
         else: data = "0"
+    elif path == "/pinnames":
+        data = json.dumps(list(settings.pinnames))
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
