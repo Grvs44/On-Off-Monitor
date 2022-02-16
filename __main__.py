@@ -163,7 +163,11 @@ def ServerRespond(clientsocket,other):
             data = "1"
         else: data = "0"
     elif path == "/pinnames":
-        data = json.dumps(list(settings.pinnames))
+        id = GetPostData(pieces,{"id":""})["id"]
+        if id in settings.pinaccess:
+            data = json.dumps(settings.pinaccess[id])
+        else:
+            data = "[]"
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
