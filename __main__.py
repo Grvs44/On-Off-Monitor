@@ -224,7 +224,7 @@ def ServerRespond(clientsocket,other):
         deletedfiles = 0
         if len(logfiles)>0:
             deletedfiles+=DeleteLogFiles(post["lognum"],(post["fileage"]=="new"))
-        for device in settings.networkdevices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("")[3])
+        for device in settings.networkdevices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=[["lognum",post["lognum"]],["fileage",post["fileage"]],["app","1"]]).split("")[3])
         if post["app"]=="1":
             data = str(deletedfiles) + " files were deleted"
         else:
@@ -235,14 +235,14 @@ def ServerRespond(clientsocket,other):
         if data["app"]=="1": data = json.dumps(logfiles)
         else: httpcode = 404
     elif path == "/deletelocallog":
-        lognum = int(GetPostData(pieces,{"lognum":0})["lognum"])
-        if app:
-            item = logfiles.pop(lognum)
+        post = GetPostData(pieces,{"lognum":0,"app":"0"})
+        if post["app"] == "1":
+            item = logfiles.pop(int(post["lognum"]))
             data = item[:4] + "/" + item[4:6] + "/" + item[6:8]
             try:
                 os.unlink("LocalLog_"+item+".dat")
                 data += " was deleted"
-            except FileNotFoundError: data += " was not found"
+            except (FileNotFoundError,ValueError): data += " was not found"
             SaveLogFileList()
         else: httpcode = 404
     elif path == "/logfile":
