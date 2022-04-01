@@ -1,8 +1,9 @@
 #!/bin/bash
 echo "On/Off Monitor: Checking for updates..."
+folder=$(realpath $(dirname "$0"))
+cd "$folder"
 git pull
 if test -f "ExtraLogFolder.txt"; then
-    folder=$PWD
     extralogfolder=$(<ExtraLogFolder.txt)
     cd "$extralogfolder"
     echo "On/Off Monitor: Checking for extra log conditions updates..."

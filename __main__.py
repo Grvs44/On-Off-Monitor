@@ -162,6 +162,12 @@ def ServerRespond(clientsocket,other):
             gpio.output(settings.networkdevices[post["ipaddress"]],post["state"] == "1")
             data = "1"
         else: data = "0"
+    elif path == "/pinnames":
+        id = GetPostData(pieces,{"id":""})["id"]
+        if id in settings.pinaccess:
+            data = json.dumps(settings.pinaccess[id])
+        else:
+            data = "[]"
     elif path == "/shutdown":
         post = GetPostData(pieces,{"devices":"this","web":"web","app":"0"})
         if post["devices"] == "all":
@@ -218,7 +224,7 @@ def ServerRespond(clientsocket,other):
         deletedfiles = 0
         if len(logfiles)>0:
             deletedfiles+=DeleteLogFiles(post["lognum"],(post["fileage"]=="new"))
-        for device in settings.networkdevices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=pathdata).split("")[3])
+        for device in settings.networkdevices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=[["lognum",post["lognum"]],["fileage",post["fileage"]],["app","1"]]).split("")[3])
         if post["app"]=="1":
             data = str(deletedfiles) + " files were deleted"
         else:
