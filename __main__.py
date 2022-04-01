@@ -229,14 +229,14 @@ def ServerRespond(clientsocket,other):
         if data["app"]=="1": data = json.dumps(logfiles)
         else: httpcode = 404
     elif path == "/deletelocallog":
-        lognum = int(GetPostData(pieces,{"lognum":0})["lognum"])
-        if app:
-            item = logfiles.pop(lognum)
+        post = GetPostData(pieces,{"lognum":"0","app":"0"})
+        if post["app"] == "1":
+            item = logfiles.pop(int(post["lognum"]))
             data = item[:4] + "/" + item[4:6] + "/" + item[6:8]
             try:
                 os.unlink("LocalLog_"+item+".dat")
                 data += " was deleted"
-            except FileNotFoundError: data += " was not found"
+            except (FileNotFoundError,ValueError): data += " was not found"
             SaveLogFileList()
         else: httpcode = 404
     elif path == "/logfile":
