@@ -1,5 +1,4 @@
 #! /usr/bin/env python3
-import json
 from settings import *
 from threading import Thread
 from time import sleep
@@ -136,7 +135,7 @@ def ServerRespond(clientsocket,other):
     elif path == "/status/status.json":
         contenttype = "application/json"
         data = []
-        for device in settings.devices: data.append([device.name,tern(gpio.input(device.pin),"Off","On")])
+        for device in settings.devices: data.append([device.name,"Off" if gpio.input(device.pin) else "On")])
         data = json.dumps(data)
     elif path == "/status/reducedstatus.json":
         contenttype = "application/json"
