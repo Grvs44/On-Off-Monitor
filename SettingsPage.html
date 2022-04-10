@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>On/Off Monitor Settings</title>
+<script src="/settings.js" type="application/javascript"></script>
+<link href="/styles.css" rel="stylesheet" type="text/css"/>
+<link href="/settings.css" rel="stylesheet" type="text/css"/>
+</head>
+<body onload="load()">
+<h1>On/Off Monitor Settings</h1>
+<form>
+    <fieldset>
+        <legend>Log settings</legend>
+        <ul>
+            <li>
+                <label for="sleeptime">Sleep time</label>
+                <input id="sleeptime" name="sleeptime" type="number"/>
+            </li>
+            <li>
+                <label for="ledswitchc">Has LED switch</label>
+                <input id="ledswitchc" name="ledswitchc" type="checkbox"/><br/>
+                <label for="ledswitch">LED switch pin number</label>
+                <input id="ledswitch" name="ledswitch" type="number"/>
+            </li>
+            <li>
+                <label for="shutdownpinc">Has shutdown button</label>
+                <input id="shutdownpinc" name="shutdownpinc" type="checkbox"/><br/>
+                <label for="shutdownpin">Shutdown button pin number</label>
+                <input id="shutdownpin" name="shutdownpin" type="number"/>
+            </li>
+            <li>
+                <label for="newthread">New thread for log component</label>
+                <input id="newthread" name="newthread" type="checkbox"/>
+            </li>
+            <li>
+                <label for="outputlog">Output log</label>
+                <input id="outputlog" name="outputlog" type="checkbox"/>
+            </li>
+            <li>
+                <label for="elc">Has extra log conditions</label>
+                <input id="elc" name="elc" type="checkbox"/><br/>
+                <label for="elc0">Extra log conditions folder path</label>
+                <input id="elc0" name="elc0" type="text"/><br/>
+                <label for="elc1">Extra log conditions module name (excluding filename extension)</label>
+                <input id="elc1" name="elc1" type="text"/>
+            </li>
+        </ul>
+    </fieldset>
+    <fieldset>
+        <legend>Network settings</legend>
+        <ul>
+            <li>
+                <label for="dataledc">Has data LED</label>
+                <input id="dataledc" name="dataledc" type="checkbox"/><br/>
+                <label for="dataled">Data LED pin number</label>
+                <input id="dataled" name="dataled" type="number"/>
+            </li>
+            <li>
+                <label for="port">Network port</label>
+                <input id="port" name="port" type="number"/>
+            </li>
+            <li>
+                <label for="deviceid">Device ID</label>
+                <input id="deviceid" name="deviceid" type="text"/>
+            </li>
+        </ul>
+    </fieldset>
+    <input type="submit" value="Save"/>
+</form>
+</body>
+</html>

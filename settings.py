@@ -175,7 +175,7 @@ class Settings:
     def tojson(this):
         data = {"sleeptime":this.sleeptime,"ledswitch":this.ledswitch,"shutdownpin":this.shutdownpin,"dataled":this.dataled,"newthread":this.newthread,"outputlog":this.outputlog,"port":this.port,"deviceid":this.deviceid,"extralogconditions":this.extralogconditions,"pinaccess":this.pinaccess,"pinnames":this.pinnames,"devices":[],"networkdevices":this.networkdevices}
         for device in this.devices:
-            data["devices"].append(list(device))
+            data["devices"].append(device.tolist())
         return json.dumps(data)
 
 class Device:
@@ -185,7 +185,7 @@ class Device:
         self.led = int(led)
     def __str__(self):
         return "%s (Pin: %i, LED: %i)" % (self.name,self.pin,self.led)
-    def __list__(self):
+    def tolist(self):
         return [self.name,self.pin,self.led]
 
 def IntValOrNone(value):
