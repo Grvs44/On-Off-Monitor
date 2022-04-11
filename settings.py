@@ -29,7 +29,7 @@ class Settings:
         if "y" in input("Set up with JSON file? (y/n) ").lower():
             try:
                 f = open(input("Path of JSON file: "),"r")
-                this._fromjsonfile(f.read())
+                this.updatefromjson(f.read())
                 f.close()
             except FileNotFoundError:
                 print("File not found, set up with questions:")
@@ -37,9 +37,9 @@ class Settings:
             except json.JSONDecodeError:
                 print("Error with decoding JSON file, set up with questions:")
                 this._initcli()
-            except Exception as e:
-                print("Error",e,"Set up with questions",sep="\n")
-                this._initcli()
+            #except Exception as e:
+            #    print("Error",e,"Set up with questions",sep="\n")
+            #    this._initcli()
         else: this._initcli()
     def _initcli(this):
         print("On/Off Monitor Log Setup")
@@ -149,9 +149,9 @@ class Settings:
         """data: a JSON string"""
         data = json.loads(data)
         if "sleeptime" in data: this.sleeptime = int(data["sleeptime"])
-        if "ledswitch" in data: this.ledswitch = int(data["ledswitch"])
-        if "shutdownpin" in data: this.shutdownpin = int(data["shutdownpin"])
-        if "dataled" in data: this.dataled = int(data["dataled"])
+        if "ledswitch" in data: this.ledswitch = IntValOrNone(data["ledswitch"])
+        if "shutdownpin" in data: this.shutdownpin = IntValOrNone(data["shutdownpin"])
+        if "dataled" in data: this.dataled = IntValOrNone(data["dataled"])
         if "newthread" in data: this.newthread = bool(data["newthread"])
         if "outputlog" in data: this.outputlog = bool(data["outputlog"])
         if "port" in data: this.port = int(data["port"])
@@ -191,7 +191,7 @@ class Device:
 def IntValOrNone(value):
     try:
         return int(value)
-    except ValueError:
+    except (ValueError,TypeError):
         return None
 
 class Page:

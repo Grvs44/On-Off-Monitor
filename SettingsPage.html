@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-gb">
 <head>
+<meta charset="utf-8">
 <title>On/Off Monitor Settings</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <script src="/settings.js" type="application/javascript"></script>
 <link href="/styles.css" rel="stylesheet" type="text/css"/>
 <link href="/settings.css" rel="stylesheet" type="text/css"/>
@@ -11,7 +13,7 @@
 <form>
     <fieldset>
         <legend>Log settings</legend>
-        <ul>
+        <ul class="set">
             <li>
                 <label for="sleeptime">Sleep time</label>
                 <input id="sleeptime" name="sleeptime" type="number"/>
@@ -48,7 +50,7 @@
     </fieldset>
     <fieldset>
         <legend>Network settings</legend>
-        <ul>
+        <ul class="set">
             <li>
                 <label for="dataledc">Has data LED</label>
                 <input id="dataledc" name="dataledc" type="checkbox"/><br/>
@@ -61,9 +63,29 @@
             </li>
             <li>
                 <label for="deviceid">Device ID</label>
-                <input id="deviceid" name="deviceid" type="text"/>
+                <input id="deviceid" name="deviceid" type="text" placeholder="None"/>
             </li>
         </ul>
+    </fieldset>
+    <fieldset>
+        <legend>Log devices</legend>
+        <ul id="devlist"></ul>
+        <input type="button" value="Add" onclick="AddDev()"/>
+    </fieldset>
+    <fieldset>
+        <legend>Network devices</legend>
+        <ul id="netlist"></ul>
+        <input type="button" value="Add" onclick="AddNet()"/>
+    </fieldset>
+    <fieldset>
+        <legend>Network pin access</legend>
+        <ul id="pinalist"></ul>
+        <input type="button" value="Add" onclick="AddPinADev()"/>
+    </fieldset>
+    <fieldset>
+        <legend>Network pin access names</legend>
+        <ul id="pinnlist"></ul>
+        <input type="button" value="Add" onclick="AddPinNDev()"/>
     </fieldset>
     <input type="submit" value="Save"/>
 </form>
