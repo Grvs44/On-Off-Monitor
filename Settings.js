@@ -1,6 +1,5 @@
 let settings = {};
-async function load(){
-    settings = await (await fetch("/settings.json")).json()
+async function ShowSettings(){
     for (let a of ["sleeptime","port","deviceid"]) {
         document.getElementById(a).value = settings[a]
     }
@@ -35,13 +34,9 @@ async function load(){
     for(let key of Object.keys(settings.networkdevices)) AddNet(key)
     for(let key of Object.keys(settings.pinaccess)) AddPinADev(key)
     for(let key of Object.keys(settings.pinnames)) AddPinName(key)
-    document.forms[0].onsubmit = Form_Submit
 }
 function Checkbox_Change(e){
     e.target.parentElement.children[4].disabled = !e.target.checked
-}
-async function Form_Submit(e){
-    e.preventDefault()
 }
 function AddDev(values=null){
     let li = document.createElement("li")

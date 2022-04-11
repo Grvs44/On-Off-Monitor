@@ -5,11 +5,15 @@
 <title>On/Off Monitor Settings</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <script src="/settings.js" type="application/javascript"></script>
+<script src="/settings1.js" type="application/javascript"></script>
+<script src="/settings2.js" type="application/javascript"></script>
 <link href="/styles.css" rel="stylesheet" type="text/css"/>
 <link href="/settings.css" rel="stylesheet" type="text/css"/>
 </head>
-<body onload="load()">
+<body onload="Onload()">
 <h1>On/Off Monitor Settings</h1>
+<input type="file" id="open" accept="application/json" onchange="LoadFile()"/>
+<input type="button" onclick="DownloadFile()" value="Download file"/>
 <form>
     <fieldset>
         <legend>Log settings</legend>

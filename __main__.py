@@ -110,7 +110,7 @@ def GetSettings():
 def Server():
     global running,turnoff,serversocket,pagecache,ipaddress
     print("On/Off Monitor Web Started")
-    pagecache = {"/":Page("HomePage.html"),"/styles.css":Page("Styles.css"),"/script.js":Page("HomeScript.js"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html"),"/settings":Page("SettingsPage.html"),"/settings.js":Page("Settings.js"),"/settings.css":Page("Settings.css")}
+    pagecache = {"/":Page("HomePage.html"),"/styles.css":Page("Styles.css"),"/script.js":Page("HomeScript.js"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html"),"/settings":Page("SettingsPage.html"),"/settings.js":Page("Settings.js"),"/settings1.js":Page("Load settings.js"),"/settings2.js":Page("Save settings.js"),"/settings.css":Page("Settings.css")}
     ipaddress = gethostname()
     serversocket.bind((ipaddress,settings.port))
     serversocket.listen(5)
@@ -184,7 +184,8 @@ def ServerRespond(clientsocket,other):
         data = settings.tojson()
         contenttype = "application/json"
     elif path == "/settings.json/save":
-        data = "1"
+        settings.updatefromjson()
+        data = ""
         contenttype = "text/plain"
     elif path == "/resetcache":
         for key in pagecache:
