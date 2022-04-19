@@ -1,12 +1,14 @@
-let settings = {};
+let settings = {}
+let settingsJSON
+let changes
 async function ShowSettings(){
-    for (let a of ["sleeptime","port","deviceid"]) {
+    for (let a of ["sleeptime","port"]) {
         document.getElementById(a).value = settings[a]
     }
     for (let a of ["newthread", "outputlog"]) {
         document.getElementById(a).checked = settings[a]
     }
-    for (let a of ["shutdownpin", "ledswitch", "dataled"]) {
+    for (let a of ["shutdownpin", "ledswitch", "dataled","deviceid"]) {
         if (settings[a] == null) {
             document.getElementById(a).disabled = true
             document.getElementById(a).checked = false
@@ -30,10 +32,12 @@ async function ShowSettings(){
         let group = e.target.parentElement.children
         group[4].disabled = group[7].disabled = !e.target.checked
     }
+    document.getElementById("devlist").innerHTML = document.getElementById("netlist").innerHTML = document.getElementById("pinalist").innerHTML = document.getElementById("pinnlist").innerHTML = ""
     for(let device of settings.devices) AddDev(device)
     for(let key of Object.keys(settings.networkdevices)) AddNet(key)
     for(let key of Object.keys(settings.pinaccess)) AddPinADev(key)
     for(let key of Object.keys(settings.pinnames)) AddPinName(key)
+    changes = true
 }
 function Checkbox_Change(e){
     e.target.parentElement.children[4].disabled = !e.target.checked
@@ -129,6 +133,7 @@ function AddPinAPin(key,pin=null){
     l1.for = e1
     e1.type = "text"
     e1.required = true
+    e1.className = "e"
     btn.type = "button"
     btn.value = "X"
     btn.className = "delete"

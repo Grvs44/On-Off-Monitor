@@ -9,3 +9,11 @@
 }
 #elc0{width:20em;}
 #elc1{width:10em;}
+header{
+    position:sticky;
+    top:0;
+    left:0;
+    background-color:#FFFFFF;
+    border:1px solid #000000;
+}
+header h1{margin-top:0;}
