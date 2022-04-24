@@ -3,6 +3,7 @@ from settings import *
 from threading import Thread
 from time import sleep
 from datetime import datetime
+from urllib.parse import unquote
 try: import RPi.GPIO as gpio
 except ModuleNotFoundError:
     if input("Use GPIOconsole (y) or GPIO_Test (default)? ") == "y": import GPIOconsole as gpio
@@ -183,9 +184,16 @@ def ServerRespond(clientsocket,other):
     elif path == "/settings.json":
         data = settings.tojson()
         contenttype = "application/json"
-    elif path == "/settings.json/save":
-        settings.updatefromjson()
-        data = ""
+    elif path == "/settings.json/set":
+        settingsJSON = unquote(GetPostData(pieces,{"d":None})["d"])
+        if settingsJSON == None:
+            data = "No data received"
+        else:
+            try:
+                settings.updatefromjson(settingsJSON)
+                data = ""
+            except Exception as e:
+                data = str(e)
         contenttype = "text/plain"
     elif path == "/resetcache":
         for key in pagecache:

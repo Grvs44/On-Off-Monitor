@@ -41,8 +41,8 @@ async function Form_Submit(e){
     if(changes) SaveToJson()
     if(e.submitter.id == "local") saveAs(new File([settingsJSON],"settings.json",{type:"application/json;charset=utf-8"}))
     else{
-        let response = await(await fetch("/settings.json/set",{"method":"POST"})).text()
-        if(response == "") alert("Settings saved")
+        let response = await(await fetch("/settings.json/set",{"method":"POST","body":"d="+encodeURI(settingsJSON)})).text()
+        if(response.trim() == "") alert("Settings saved")
         else alert(response)
     }
 }
