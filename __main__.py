@@ -119,7 +119,7 @@ def Server():
         try:
             req = serversocket.accept()
             Thread(target=ServerRespond,args=req).start()
-        except OSError: break
+        except (KeyboardInterrupt,OSError): break
 def ServerRespond(clientsocket,other):
     global running,turnoff,pagecache
     if settings.dataled:
@@ -293,6 +293,11 @@ turnoff = False
 settings = GetSettings()
 SetupGpio()
 serversocket = socket(AF_INET, SOCK_STREAM)
-Thread(target=Server).start()
-if settings.newthread: Thread(target=Log).start()
-else: Log()
+try:
+    Thread(target=Server).start()
+    try:
+        if settings.newthread: Thread(target=Log).start()
+        else: Log()
+    except KeyboardInterrupt: pass
+except KeyboardInterrupt:
+    print("On/Off Monitor stopped")
