@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-gb">
+<head>
+<meta charset="utf-8">
+<title>On/Off Monitor Settings</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<script src="/filesaver.min.js" type="application/javascript"></script>
+<script src="/settings.js" type="application/javascript"></script>
+<script src="/settings1.js" type="application/javascript"></script>
+<script src="/settings2.js" type="application/javascript"></script>
+<link href="/styles.css" rel="stylesheet" type="text/css"/>
+<link href="/settings.css" rel="stylesheet" type="text/css"/>
+</head>
+<body onload="Onload()">
+<form>
+    <header>
+        <h1>On/Off Monitor Settings</h1>
+        <input type="submit" value="Save to monitor"/>
+        <input type="submit" value="Save to this device" id="local"/>
+        <input type="file" id="open" accept="application/json" onchange="LoadFile()"/>
+        <a href="settings.json" download><input type="button" value="Download file from monitor"/></a>
+    </header>
+    <fieldset>
+        <legend>Log settings</legend>
+        <ul class="set">
+            <li>
+                <label for="sleeptime">Sleep time</label>
+                <input id="sleeptime" name="sleeptime" type="number" required/>
+            </li>
+            <li>
+                <label for="ledswitchc">Has LED switch</label>
+                <input id="ledswitchc" name="ledswitchc" type="checkbox"/><br/>
+                <label for="ledswitch">LED switch pin number</label>
+                <input id="ledswitch" name="ledswitch" type="number" required/>
+            </li>
+            <li>
+                <label for="shutdownpinc">Has shutdown button</label>
+                <input id="shutdownpinc" name="shutdownpinc" type="checkbox"/><br/>
+                <label for="shutdownpin">Shutdown button pin number</label>
+                <input id="shutdownpin" name="shutdownpin" type="number" required/>
+            </li>
+            <li>
+                <label for="newthread">New thread for log component</label>
+                <input id="newthread" name="newthread" type="checkbox"/>
+            </li>
+            <li>
+                <label for="outputlog">Output log</label>
+                <input id="outputlog" name="outputlog" type="checkbox"/>
+            </li>
+            <li>
+                <label for="elc">Has extra log conditions</label>
+                <input id="elc" name="elc" type="checkbox"/><br/>
+                <label for="elc0">Extra log conditions folder path</label>
+                <input id="elc0" name="elc0" type="text" required/><br/>
+                <label for="elc1">Extra log conditions module name (excluding filename extension)</label>
+                <input id="elc1" name="elc1" type="text" required/>
+            </li>
+        </ul>
+    </fieldset>
+    <fieldset>
+        <legend>Network settings</legend>
+        <ul class="set">
+            <li>
+                <label for="dataledc">Has data LED</label>
+                <input id="dataledc" name="dataledc" type="checkbox"/><br/>
+                <label for="dataled">Data LED pin number</label>
+                <input id="dataled" name="dataled" type="number" required/>
+            </li>
+            <li>
+                <label for="port">Network port</label>
+                <input id="port" name="port" type="number" required/>
+            </li>
+            <li>
+                <label for="deviceidc">Has data LED</label>
+                <input id="deviceidc" name="deviceidc" type="checkbox"/><br/>
+                <label for="deviceid">Device ID</label>
+                <input id="deviceid" name="deviceid" type="text" required/>
+            </li>
+        </ul>
+    </fieldset>
+    <fieldset>
+        <legend>Log devices</legend>
+        <ul id="devlist"></ul>
+        <input type="button" value="Add" onclick="AddDev()"/>
+    </fieldset>
+    <fieldset>
+        <legend>Network devices</legend>
+        <ul id="netlist"></ul>
+        <input type="button" value="Add" onclick="AddNet()"/>
+    </fieldset>
+    <fieldset>
+        <legend>Network pin access</legend>
+        <ul id="pinalist"></ul>
+        <input type="button" value="Add" onclick="AddPinADev()"/>
+    </fieldset>
+    <fieldset>
+        <legend>Network pin access names</legend>
+        <ul id="pinnlist"></ul>
+        <input type="button" value="Add" onclick="AddPinName()"/>
+    </fieldset>
+</form>
+</body>
+</html>

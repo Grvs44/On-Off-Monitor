@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
-import json
 from settings import *
 from threading import Thread
 from time import sleep
 from datetime import datetime
+from urllib.parse import unquote
 try: import RPi.GPIO as gpio
 except ModuleNotFoundError:
     if input("Use GPIOconsole (y) or GPIO_Test (default)? ") == "y": import GPIOconsole as gpio
@@ -111,7 +111,7 @@ def GetSettings():
 def Server():
     global running,turnoff,serversocket,pagecache,ipaddress
     print("On/Off Monitor Web Started")
-    pagecache = {"/":Page("HomePage.html"),"/styles.css":Page("Styles.css"),"/script.js":Page("HomeScript.js"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html")}
+    pagecache = {"/":Page("HomePage.html"),"/styles.css":Page("Styles.css"),"/script.js":Page("HomeScript.js"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html"),"/settings":Page("SettingsPage.html"),"/settings.js":Page("Settings.js"),"/settings1.js":Page("Load settings.js"),"/settings2.js":Page("Save settings.js"),"/settings.css":Page("Settings.css"),"/filesaver.min.js":Page("FileSaver.min.js")}
     ipaddress = gethostname()
     serversocket.bind((ipaddress,settings.port))
     serversocket.listen(5)
@@ -136,7 +136,7 @@ def ServerRespond(clientsocket,other):
     elif path == "/status/status.json":
         contenttype = "application/json"
         data = []
-        for device in settings.devices: data.append([device.name,tern(gpio.input(device.pin),"Off","On")])
+        for device in settings.devices: data.append([device.name,"Off" if gpio.input(device.pin) else "On"])
         data = json.dumps(data)
     elif path == "/status/reducedstatus.json":
         contenttype = "application/json"
@@ -181,6 +181,20 @@ def ServerRespond(clientsocket,other):
         if post["web"] == "all":
             turnoff = True
         running = False
+    elif path == "/settings.json":
+        data = settings.tojson()
+        contenttype = "application/json"
+    elif path == "/settings.json/set":
+        settingsJSON = unquote(GetPostData(pieces,{"d":None})["d"])
+        if settingsJSON == None:
+            data = "No data received"
+        else:
+            try:
+                settings.updatefromjson(settingsJSON)
+                data = ""
+            except Exception as e:
+                data = str(e)
+        contenttype = "text/plain"
     elif path == "/resetcache":
         for key in pagecache:
             pagecache[key].reset()

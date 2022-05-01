@@ -1,4 +1,4 @@
-import os,pickle
+import os,pickle,json
 from server import *
 def ListToCsv(header,item):
     csv=header+"\n"
@@ -18,7 +18,30 @@ class Settings:
         this.pinaccess = {}
         this.pinnames = {}
         this.deviceid = None
+        this.shutdownpin = None
+        this.dataled = None
+        this.extralogconditions = None
+        this.newthread = False
+        this.outputlog = False
+        this.devices = []
+        
 
+        if "y" in input("Set up with JSON file? (y/n) ").lower():
+            try:
+                f = open(input("Path of JSON file: "),"r")
+                this.updatefromjson(f.read())
+                f.close()
+            except FileNotFoundError:
+                print("File not found, set up with questions:")
+                this._initcli()
+            except json.JSONDecodeError:
+                print("Error with decoding JSON file, set up with questions:")
+                this._initcli()
+            #except Exception as e:
+            #    print("Error",e,"Set up with questions",sep="\n")
+            #    this._initcli()
+        else: this._initcli()
+    def _initcli(this):
         print("On/Off Monitor Log Setup")
         sleep = input("Wait time after loops (seconds, default is 1): ")
         if sleep != "": this.sleeptime = int(sleep)
@@ -29,13 +52,10 @@ class Settings:
         this.extralogconditions = input("Extra log conditions script (*.py,*.pyw,*.pyc file) path (leave blank if there isn't a script): ")
         while this.extralogconditions != "" and not os.path.isfile(os.path.abspath(this.extralogconditions)):
             this.extralogconditions = input("Please enter a valid path: ")
-        if this.extralogconditions == "":
-            this.extralogconditions = None
-        else:
+        if this.extralogconditions != "":
             this.extralogconditions = list(os.path.split(os.path.splitext(this.extralogconditions)[0]))
         this.newthread = "y" in input("Start a new thread for log program (y/n) - allows the program to run in the background fully: ").lower()
         this.outputlog = "y" in input("Output log (y/n) - not recommended if log has a new thread: ").lower()
-        this.devices = []
         setup = False
         if "y" in input("Set up device name/input/output list with CSV file? (y/n) ").lower():
             csvpath = input("Please enter the path of the CSV file: ")
@@ -122,10 +142,42 @@ class Settings:
         state: True for off, False for on"""
         try:
             if type(device) == int: device = this.networkdevices[device]
-            return GetData(device,"/pinaccess",[["pin",pinname],["state",tern(state,"1","0")],["id",this.deviceid]]).split("\r\n\r\n")[1] == "1"
+            return GetData(device,"/pinaccess",[["pin",pinname],["state","1" if state else "0"],["id",this.deviceid]]).split("\r\n\r\n")[1] == "1"
         except KeyError as e:
             raise KeyError("Device or pin name doesn't exist") from e
-            
+    def updatefromjson(this,data):
+        """data: a JSON string"""
+        data = json.loads(data)
+        if "sleeptime" in data: this.sleeptime = int(data["sleeptime"])
+        if "ledswitch" in data: this.ledswitch = IntValOrNone(data["ledswitch"])
+        if "shutdownpin" in data: this.shutdownpin = IntValOrNone(data["shutdownpin"])
+        if "dataled" in data: this.dataled = IntValOrNone(data["dataled"])
+        if "newthread" in data: this.newthread = bool(data["newthread"])
+        if "outputlog" in data: this.outputlog = bool(data["outputlog"])
+        if "port" in data: this.port = int(data["port"])
+        if "deviceid" in data: this.deviceid = data["deviceid"]
+        if "extralogconditions" in data:
+            if type(data["extralogconditions"]) == list and len(data["extralogconditions"]) >= 2:
+                this.extralogconditions = data["extralogconditions"][:2]
+            elif type(data["extralogconditions"]) == str:
+                this.extralogconditions = list(os.path.split(os.path.splitext(data["extralogconditions"])[0]))
+        if "pinaccess" in data and type(data["pinaccess"]) == dict:
+            this.pinaccess = data["pinaccess"]
+        if "pinnames" in data and type(data["pinnames"]) == dict:
+            this.pinnames = data["pinnames"]
+        if "devices" in data and type(data["devices"]) == list:
+            for device in data["devices"]:
+                if type(device) == list and len(device) >= 3:
+                    this.devices.append(Device(*device[:3]))
+        if "networkdevices" in data and type(data["networkdevices"]) == dict:
+            this.networkdevices = data["networkdevices"]
+        this.save()
+    def tojson(this):
+        data = {"sleeptime":this.sleeptime,"ledswitch":this.ledswitch,"shutdownpin":this.shutdownpin,"dataled":this.dataled,"newthread":this.newthread,"outputlog":this.outputlog,"port":this.port,"deviceid":this.deviceid,"extralogconditions":this.extralogconditions,"pinaccess":this.pinaccess,"pinnames":this.pinnames,"devices":[],"networkdevices":this.networkdevices}
+        for device in this.devices:
+            data["devices"].append(device.tolist())
+        return json.dumps(data)
+
 class Device:
     def __init__(self,name,pin,led):
         self.name = name
@@ -133,15 +185,13 @@ class Device:
         self.led = int(led)
     def __str__(self):
         return "%s (Pin: %i, LED: %i)" % (self.name,self.pin,self.led)
-
-def tern(condition,truevalue,falsevalue):
-    if condition: return truevalue
-    else: return falsevalue
+    def tolist(self):
+        return [self.name,self.pin,self.led]
 
 def IntValOrNone(value):
     try:
         return int(value)
-    except ValueError:
+    except (ValueError,TypeError):
         return None
 
 class Page:
