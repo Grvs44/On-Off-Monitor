@@ -1,6 +1,7 @@
 let list
 function Onload(){
     list = document.getElementById("list")
+    document.forms[0]["c"].placeholder = "Enter commands here\nThe console instance is closed after each set of commands is sent"
     document.forms[0].addEventListener("submit",SubmitCommand)
 }
 async function SubmitCommand(e){
@@ -15,4 +16,7 @@ async function SubmitCommand(e){
     li.append(cmd,document.createElement("br"),res)
     list.appendChild(li)
     li.scrollIntoView()
+}
+function Clear(){
+    list.innerHTML = ""
 }

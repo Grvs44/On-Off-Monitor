@@ -180,6 +180,19 @@ class Settings:
         for device in this.devices:
             data["devices"].append(device.tolist())
         return json.dumps(data)
+    @staticmethod
+    def fromfile(path):
+        try:
+            f = open(path,"rb")
+            settings = pickle.load(f)
+            f.close()
+            attributes = {"sleeptime":1,"logfiles":[],"ledswitch":None,"networkdevices":{},"port":80,"pinaccess":{},"pinnames":{},"deviceid":None,"shutdownpin":None,"dataled":None,"extralogconditions":None,"newthread":False,"outputlog":False,"devices":[],"console":False}
+            for attribute in attributes:
+                if not hasattr(settings,attribute) or type(settings.__dict__[attribute]) != type(attributes[attribute]):
+                    settings.__dict__[attribute] = attributes[attribute]
+            return settings
+        except FileNotFoundError:
+            return Settings()
 
 class Device:
     def __init__(self,name,pin,led):

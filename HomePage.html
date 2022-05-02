@@ -2,81 +2,96 @@
 <html>
 <head>
 <meta charset="utf-8">
-    <title>On/Off Monitor Home</title>
-    <link href="/styles.css" rel="stylesheet" type="text/css"/>
-	<script type="application/javascript" src="/script.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>On/Off Monitor Home</title>
+<link href="/styles.css" rel="stylesheet" type="text/css" />
+<script type="application/javascript" src="/script.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 </head>
 <body>
-    <h1>On/Off Monitor Home</h1>
-    <ul>
-        <li>
+<h1>On/Off Monitor Home</h1>
+<ul>
+    <li>
         <h2>Log files</h2>
-            <ul>
-                <li><h3>Download</h3>
+        <ul>
+            <li>
+                <h3>Download</h3>
                 <form method="post" action="log.csv">
                     <ul>
                         <li>
                             <label for="lognum">Using </label>
                             <input type="number" id="lognum" name="lognum" value="1" />
                             <label for="oldfiles">of the oldest files</label>
-                            <input type="radio" name="fileage" value="old" id="oldfiles"/>
+                            <input type="radio" name="fileage" value="old" id="oldfiles" />
                             <label for="newfiles">newest files</label>
-                            <input type="radio" name="fileage" value="new" id="newfiles" checked/>
+                            <input type="radio" name="fileage" value="new" id="newfiles" checked />
                         </li>
-                        <li><input type="submit" value="Download"/></li>
+                        <li><input type="submit" value="Download" /></li>
                     </ul>
                 </form>
-                </li>
-<li><h3>Delete</h3>
-<form method="post" action="deletelogs">
-<ul>
-<li>
-<label for="lognumd">Number of log files: </label>
-                            <input type="number" id="lognumd" name="lognum" value="1" onkeyup="ChangeDeleteLabels(this)" min="1" step="1"/></li>
-                            <li><label for="oldfilesd">Delete <span id="deletelabel1">1</span> of the oldest files</label>
-                            <input type="radio" name="fileage" value="old" id="oldfilesd"/></li>
-                            <li><label for="newfilesd">Keep <span id="deletelabel2">1</span> of the newest files</label>
+            </li>
+            <li>
+                <h3>Delete</h3>
+                <form method="post" action="deletelogs">
+                    <ul>
+                        <li>
+                            <label for="lognumd">Number of log files: </label>
+                            <input type="number" id="lognumd" name="lognum" value="1" onkeyup="ChangeDeleteLabels(this)" min="1" step="1"/>
+                        </li>
+                        <li>
+                            <label for="oldfilesd">Delete <span id="deletelabel1">1</span> of the oldest files</label>
+                            <input type="radio" name="fileage" value="old" id="oldfilesd"/>
+                        </li>
+                        <li>
+                            <label for="newfilesd">Keep <span id="deletelabel2">1</span> of the newest files</label>
                             <input type="radio" name="fileage" value="new" id="newfilesd" checked/>
-</li>
-<li><input type="button" onclick="ConfirmDelete('Delete')" value="Delete" id="deletebutton"/><input type="submit" style="display:none" id="confirmdeletebutton" value="Confirm delete"/>
-</ul>
-</form>
-</li>
+                        </li>
+                        <li>
+                            <input type="button" onclick="ConfirmDelete('Delete')" value="Delete" id="deletebutton"/>
+                            <input type="submit" style="display:none" id="confirmdeletebutton" value="Confirm delete"/>
+                        </li>
+                    </ul>
+                </form>
+            </li>
+        </ul>
+    </li>
+    <li>
+        <h2>Shutdown</h2>
+        <form method="post" action="shutdown">
+            <ul>
+                <li>
+                    <label for="sdrthis">This device</label>
+                    <input type="radio" id="sdrthis" value="this" name="devices" checked/>
+                </li>
+                <li>
+                    <label for="sdrall">All devices</label>
+                    <input type="radio" id="sdrall" name="devices" value="all"/>
+                </li>
+                <li>
+                    <label for="sdrweb">On/Off Monitor</label>
+                    <input type="radio" id="sdrweb" value="web" name="web" checked/>
+                </li>
+                <li>
+                    <label for="sdrdevice">On/Off Monitor and device</label>
+                    <input type="radio" id="sdrdevice" value="all" name="web"/>
+                </li>
+                <li>
+                    <input type="button" value="Shut down" onclick="ConfirmShutdown()" id="sdownbutton"/>
+                    <input style="display:none" type="submit" id="confirmsdownbutton" value="Confirm shut down"/>
+                </li>
             </ul>
-        </li>
-        <li>
-            <h2>Shutdown</h2>
-            <form method="post" action="shutdown">
-                <ul>
-                    <li>
-                        <label for="sdrthis">This device</label>
-                        <input type="radio" id="sdrthis" value="this" name="devices" checked />
-                    </li>
-                    <li>
-                        <label for="sdrall">All devices</label>
-                        <input type="radio" id="sdrall" name="devices" value="all" />
-                    </li>
-                    <li>
-                        <label for="sdrweb">On/Off Monitor</label>
-                        <input type="radio" id="sdrweb" value="web" name="web" checked />
-                    </li>
-                    <li>
-                        <label for="sdrdevice">On/Off Monitor and device</label>
-                        <input type="radio" id="sdrdevice" value="all" name="web" />
-                    </li>
-                <li><input type="button" value="Shut down" onclick="ConfirmShutdown()" id="sdownbutton"/><input style="display:none" type="submit" id="confirmsdownbutton" value="Confirm shut down"/></li>
-                </ul>
-            </form>
-        </li>
-		<li>
-		<h2>Apps</h2>
-		<ul>
-		<li><a href="/status">Live status</a></li>
-		<li><a href="/status/reduced">Reduced live status</a></li>
-		<li><a href="/app">Download for Python</a></li>
-		</ul></li>
-    </ul>
-<ul><li><a href="/settings"><button>Settings</button></a> <button onclick="ResetCache()">Reset page cache</button></li></ul>
+        </form>
+    </li>
+    <li>
+        <h2>Apps</h2>
+        <ul>
+            <li><a href="/status">Live status</a></li>
+            <li><a href="/status/reduced">Reduced live status</a></li>
+            <li><a href="/settings">Settings</a></li>
+            <li><a href="/console">Console</a></li>
+            <li><a href="/app">Download for Python</a></li>
+            <li><button onclick="ResetCache()">Reset page cache</button></li>
+        </ul>
+    </li>
+</ul>
 </body>
 </html>

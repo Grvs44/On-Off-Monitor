@@ -6,7 +6,16 @@ if os.path.isfile("Settings.dat"):
     f.close()
     options = ""
     for key in settings.__dict__:
-        options += "\n%s\t%s" % (key,settings.__dict__[key])
+        item = settings.__dict__[key]
+        if type(item) == list:
+            if len(item) == 0: options += "\n" + key + "\t[]"
+            else:
+                options += "\n" + key + "\t["
+                for i in range(len(item)-1):
+                    options += str(item[i]) + ", "
+                options += str(item[-1]) + "]"
+        else:
+            options += "\n%s\t%s" % (key,item)
     print("----Options----\nATTIRBUTE\tVALUE" + options)
     while True:
         try:

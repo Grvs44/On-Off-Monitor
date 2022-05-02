@@ -97,12 +97,7 @@ def Log() :
     quit()
 def GetSettings():
     global ExtraLogConditions
-    try:
-        f = open(os.path.join(Page.folder,"Settings.dat"),"rb")
-        settings = pickle.load(f)
-        f.close()
-    except FileNotFoundError:
-        settings = Settings()
+    settings = Settings.fromfile(os.path.join(Page.folder,"Settings.dat"))
     if settings.extralogconditions:
         from sys import path
         path.append(settings.extralogconditions[0])
@@ -204,7 +199,8 @@ def ServerRespond(clientsocket,other):
         contenttype = "text/plain"
     elif path == "/console/run":
         if settings.console:
-            data = subprocess.getoutput(" & ".join(json.loads(GetPostData(pieces,{"c":""})["c"])))
+            try: data = subprocess.getoutput(" & ".join(json.loads(GetPostData(pieces,{"c":""})["c"])))
+            except Exception as e: data = "ERROR: " + str(e)
             contenttype = "text/plain"
         else: httpcode = 404
     elif path == "/resetcache":
