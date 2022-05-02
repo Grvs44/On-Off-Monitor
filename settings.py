@@ -24,12 +24,12 @@ class Settings:
         this.newthread = False
         this.outputlog = False
         this.devices = []
-        
+        this.console = False        
 
         if "y" in input("Set up with JSON file? (y/n) ").lower():
             try:
                 f = open(input("Path of JSON file: "),"r")
-                this.updatefromjson(f.read())
+                this.updatefromjson(f.read(),True)
                 f.close()
             except FileNotFoundError:
                 print("File not found, set up with questions:")
@@ -56,6 +56,7 @@ class Settings:
             this.extralogconditions = list(os.path.split(os.path.splitext(this.extralogconditions)[0]))
         this.newthread = "y" in input("Start a new thread for log program (y/n) - allows the program to run in the background fully: ").lower()
         this.outputlog = "y" in input("Output log (y/n) - not recommended if log has a new thread: ").lower()
+        this.console = "y" in input("Access console remotely (y/n): ").lower()
         setup = False
         if "y" in input("Set up device name/input/output list with CSV file? (y/n) ").lower():
             csvpath = input("Please enter the path of the CSV file: ")
@@ -145,7 +146,7 @@ class Settings:
             return GetData(device,"/pinaccess",[["pin",pinname],["state","1" if state else "0"],["id",this.deviceid]]).split("\r\n\r\n")[1] == "1"
         except KeyError as e:
             raise KeyError("Device or pin name doesn't exist") from e
-    def updatefromjson(this,data):
+    def updatefromjson(this,data,ask=False):
         """data: a JSON string"""
         data = json.loads(data)
         if "sleeptime" in data: this.sleeptime = int(data["sleeptime"])
@@ -171,6 +172,8 @@ class Settings:
                     this.devices.append(Device(*device[:3]))
         if "networkdevices" in data and type(data["networkdevices"]) == dict:
             this.networkdevices = data["networkdevices"]
+        if ask:
+            this.console = "y" in input("Setting not in JSON file:\nAccess console remotely (y/n): ").lower()
         this.save()
     def tojson(this):
         data = {"sleeptime":this.sleeptime,"ledswitch":this.ledswitch,"shutdownpin":this.shutdownpin,"dataled":this.dataled,"newthread":this.newthread,"outputlog":this.outputlog,"port":this.port,"deviceid":this.deviceid,"extralogconditions":this.extralogconditions,"pinaccess":this.pinaccess,"pinnames":this.pinnames,"devices":[],"networkdevices":this.networkdevices}
