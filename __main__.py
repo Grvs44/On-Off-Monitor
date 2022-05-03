@@ -119,8 +119,9 @@ def Server():
     serversocket.listen(5)
     while running:
         try:
-            req = serversocket.accept()
-            Thread(target=ServerRespond,args=req).start()
+            t = Thread(target=ServerRespond,args=serversocket.accept())
+            t.daemon = True
+            t.start()
         except (KeyboardInterrupt,OSError): break
 def ServerRespond(clientsocket,other):
     global running,turnoff,pagecache
@@ -316,7 +317,9 @@ settings = GetSettings()
 SetupGpio()
 serversocket = socket(AF_INET, SOCK_STREAM)
 try:
-    Thread(target=Server).start()
+    serverthread = Thread(target=Server)
+    serverthread.daemon = True
+    serverthread.start()
     try:
         if settings.newthread: Thread(target=Log).start()
         else: Log()
