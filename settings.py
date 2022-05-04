@@ -212,7 +212,7 @@ def IntValOrNone(value):
 
 class Page:
     folder = os.path.dirname(__file__)
-    contenttypes = {"html":"text/html","js":"application/javascript","css":"text/css"}
+    contenttypes = {"html":"text/html","js":"application/javascript","css":"text/css","json":"application/json","txt":"text/plain","csv":"text/csv","dat":"application/octet-stream"}
     """__init__
     Caches the contents of a file, so the file is only read once
     path: the path of the file"""

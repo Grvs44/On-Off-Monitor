@@ -202,7 +202,7 @@ def ServerRespond(clientsocket,other):
         if settings.console:
             try: data = subprocess.getoutput(" & ".join(json.loads(GetPostData(pieces,{"c":""})["c"])))
             except Exception as e: data = "ERROR: " + str(e)
-            contenttype = "text/plain"
+            filetype = "txt"
         else: httpcode = 404
     elif path == "/resetcache":
         for key in pagecache:
@@ -210,14 +210,15 @@ def ServerRespond(clientsocket,other):
         data = "Page cache reset"
         contenttype = "text/plain"
     elif "/localdata" in path:
+        contenttype = ""
         try:
             item = 1
             if "?" in path:
                 item = int(path.split("?")[1])
-            if item > len(logfiles): data=json.dumps([])
+            if item > len(logfiles): data = b'\x80\x03]q\x00.' # the result of pickle.dumps([])
             else:
-                f=open("LocalLog_"+logfiles[len(logfiles)-item]+".dat",mode="r")
-                data = json.dumps(pickle.load(f))
+                f=open("LocalLog_"+logfiles[len(logfiles)-item]+".dat","rb")
+                data = f.read()
                 f.close()
         except IndexError: pass
     elif path == "/log.csv":
@@ -233,10 +234,10 @@ def ServerRespond(clientsocket,other):
             f = open("LocalLog_"+logfiles[i]+".dat","rb")
             filedata.extend(pickle.load(f))
             f.close()
-            for device in settings.networkdevices: filedata.extend(json.loads(GetData(device,"/localdata?"+str(i)).split("")[3]))
+            for device in settings.networkdevices: filedata.extend(pickle.loads(GetData(device,"/localdata?"+str(i),binary=True)))
         filedata.sort(reverse=True)
         data = ListToCsv("Date,Time,Device,Status",filedata)
-        contenttype="text/csv"
+        contenttype = "text/csv"
     elif path == "/deletelocallogs":
         post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
         post["lognum"] = int(post["lognum"])
@@ -272,21 +273,24 @@ def ServerRespond(clientsocket,other):
         post = GetPostData(pieces,{"lognum":0,"app":"0"})
         post["lognum"]=int(post["lognum"])
         if post["app"]=="1":
-            print("lognum: ",post["lognum"])
+            contenttype = ""
+            filetype="dat"
             if post["lognum"] < len(logfiles):
                 f = open("LocalLog_"+logfiles[post["lognum"]]+".dat","rb")
-                data = json.dumps(pickle.load(f))
+                data = f.read()
                 f.close()
-            else: data = "[]"
+            else: data = b'\x80\x03]q\x00.' # the result of pickle.dumps([])
         else: httpcode = 404
     elif "/deleted" in path:
         try: deleteditems = path.split("deleted")[1]
         except IndexError: deleteditems = "0"
         data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
     else: httpcode = 404
-    if httpcode == 200: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: " + cachecontrol + "\r\n\r\n"+data+"\r\n\r\n").encode())
-    elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>\r\n\r\n".encode())
-    elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data+"\r\n\r\n").encode())
+    if httpcode == 200:
+        if contenttype == "": clientsocket.sendall(data) # No content type = send data over TCP
+        else: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: " + cachecontrol + "\r\n\r\n"+data).encode())
+    elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>".encode())
+    elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data).encode())
     clientsocket.shutdown(SHUT_WR)
     if settings.dataled:
         gpio.output(settings.dataled,False)
@@ -320,9 +324,7 @@ try:
     serverthread = Thread(target=Server)
     serverthread.daemon = True
     serverthread.start()
-    try:
-        if settings.newthread: Thread(target=Log).start()
-        else: Log()
-    except KeyboardInterrupt: pass
+    if settings.newthread: Thread(target=Log).start()
+    else: Log()
 except KeyboardInterrupt:
     print("On/Off Monitor stopped")
