@@ -2,7 +2,7 @@
 from settings import *
 from threading import Thread
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import unquote
 import subprocess
 try: import RPi.GPIO as gpio
@@ -27,7 +27,7 @@ def Load():
         if currentlogtime not in settings.logfiles:
             settings.logfiles.append(currentlogtime)
     except FileNotFoundError:
-        g = open(os.path.join(Page.folder,"localLog_"+currentlogtime+".dat"),"wb")
+        g = open(os.path.join(Page.folder,"LocalLog_"+currentlogtime+".dat"),"wb")
         pickle.dump([],g)
         g.close()
 def GetLogFileList():
@@ -209,6 +209,21 @@ def ServerRespond(clientsocket,other):
             pagecache[key].reset()
         data = "Page cache reset"
         contenttype = "text/plain"
+    elif path == "/datelog":
+        contenttype = ""
+        date = GetPostData(pieces,{"date":None})["date"]
+        if date != None and date in logfiles:
+            try:
+                f = open(os.path.join(Page.folder,"LocalLog_"+date+".dat"),"rb")
+                data = f.read()
+                f.close()
+            except FileNotFoundError:
+                print("FILENOTFOUND",date)
+                logfiles.remove(date)
+                data = b'\x80\x03]q\x00.'
+                SaveLogFileList()
+        else:
+            data = b'\x80\x03]q\x00.'
     elif "/localdata" in path:
         contenttype = ""
         try:
@@ -222,19 +237,35 @@ def ServerRespond(clientsocket,other):
                 f.close()
         except IndexError: pass
     elif path == "/log.csv":
-        post = GetPostData(pieces,{"lognum":0,"fileage":"new"})
-        post["lognum"] = int(post["lognum"])
-        if post["lognum"] < 1: post["lognum"] = 1
-        elif post["lognum"] > len(logfiles): post["lognum"] = len(logfiles)
-        if post["fileage"]=="new": logfilein = range(len(logfiles)-1,len(logfiles)-post["lognum"]-1,-1)
-        else: logfilein = range(post["lognum"])
-        print(list(logfilein))
+        post = GetPostData(pieces,{"lognum":None,"fileage":"new","date1":"","date2":""})
         filedata = []
-        for i in logfilein:
-            f = open("LocalLog_"+logfiles[i]+".dat","rb")
-            filedata.extend(pickle.load(f))
-            f.close()
-            for device in settings.networkdevices: filedata.extend(pickle.loads(GetData(device,"/localdata?"+str(i),binary=True)))
+        if type(post["lognum"]) == str and post["lognum"].isnumeric():
+            post["lognum"] = int(post["lognum"])
+            if post["lognum"] < 1: post["lognum"] = 1
+            elif post["lognum"] > len(logfiles): post["lognum"] = len(logfiles)
+            if post["fileage"]=="new": logfilein = range(len(logfiles)-1,len(logfiles)-post["lognum"]-1,-1)
+            else: logfilein = range(post["lognum"])
+            for i in logfilein:
+                f = open("LocalLog_"+logfiles[i]+".dat","rb")
+                filedata.extend(pickle.load(f))
+                f.close()
+                for device in settings.networkdevices:
+                    try: filedata.extend(pickle.loads(GetData(device,"/localdata?"+str(i),binary=True)))
+                    except: pass
+        else:
+            if post["date1"] > post["date2"]: post["date1"],post["date2"] = post["date2"],post["date1"]
+            date = datetime.strptime(post["date1"],"%Y%m%d")
+            enddate = datetime.strptime(post["date2"],"%Y%m%d")
+            day = timedelta(days=1)
+            requestdata = [["date",""]]
+            while date <= enddate:
+                if date in logfiles:
+                    f = open(os.path.join(Page.folder,"LocalLog_"+currentlogtime+".dat"),"wb")
+                    filedata.extend(pickle.load(f))
+                    f.close()
+                requestdata[0][1] = date.strftime("%Y%m%d")
+                for device in settings.networkdevices: filedata.extend(pickle.loads(GetData(device,"/datelog",requestdata,True)))
+                date += day
         filedata.sort(reverse=True)
         data = ListToCsv("Date,Time,Device,Status",filedata)
         contenttype = "text/csv"
