@@ -254,18 +254,17 @@ def ServerRespond(clientsocket,other):
                     except: pass
         else:
             if post["date1"] > post["date2"]: post["date1"],post["date2"] = post["date2"],post["date1"]
-            date = datetime.strptime(post["date1"],"%Y%m%d")
-            enddate = datetime.strptime(post["date2"],"%Y%m%d")
+            startdate = datetime.strptime(post["date1"],"%Y-%m-%d")
+            date = datetime.strptime(post["date2"],"%Y-%m-%d")
             day = timedelta(days=1)
-            requestdata = [["date",""]]
-            while date <= enddate:
-                if date in logfiles:
-                    f = open(os.path.join(Page.folder,"LocalLog_"+currentlogtime+".dat"),"wb")
+            while startdate <= date:
+                datestring = date.strftime("%Y%m%d")
+                if datestring in logfiles:
+                    f = open(os.path.join(Page.folder,"LocalLog_"+datestring+".dat"),"rb")
                     filedata.extend(pickle.load(f))
                     f.close()
-                requestdata[0][1] = date.strftime("%Y%m%d")
-                for device in settings.networkdevices: filedata.extend(pickle.loads(GetData(device,"/datelog",requestdata,True)))
-                date += day
+                for device in settings.networkdevices: filedata.extend(pickle.loads(GetData(device,"/datelog",[["date",datestring]],True)))
+                date -= day
         filedata.sort(reverse=True)
         data = ListToCsv("Date,Time,Device,Status",filedata)
         contenttype = "text/csv"

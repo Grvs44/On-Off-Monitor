@@ -5,3 +5,4 @@ user-select:none;
 }
 ul{list-style-type:none;}
 input[type="submit"],input[type="button"],input[type="radio"],button{cursor:pointer;}
+input[type="date"]{font-family:Calibri;}

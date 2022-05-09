@@ -16,6 +16,8 @@
             <li>
                 <h3>Download</h3>
                 <form method="post" action="log.csv">
+					<fieldset>
+					<legend>By number of files</legend>
                     <ul>
                         <li>
                             <label for="lognum">Using </label>
@@ -27,6 +29,23 @@
                         </li>
                         <li><input type="submit" value="Download" /></li>
                     </ul>
+					</fieldset>
+                </form>
+                <form method="post" action="log.csv">
+					<fieldset>
+					<legend>By date</legend>
+                    <ul>
+                        <li>
+                            <label for="date1">Start date </label>
+                            <input name="date1" id="date1" type="date"/>
+                        </li>
+                        <li>
+                            <label for="date2">End date </label>
+                            <input name="date2" id="date1" type="date"/>
+                        </li>
+                        <li><input type="submit" value="Download"/></li>
+                    </ul>
+					</fieldset>
                 </form>
             </li>
             <li>
