@@ -224,6 +224,9 @@ def ServerRespond(clientsocket,other):
                 SaveLogFileList()
         else:
             data = b'\x80\x03]q\x00.'
+    elif path == "/version":
+        data = version
+        contenttype = "text/plain"
     elif "/localdata" in path:
         contenttype = ""
         try:
@@ -232,7 +235,7 @@ def ServerRespond(clientsocket,other):
                 item = int(path.split("?")[1])
             if item > len(logfiles): data = b'\x80\x03]q\x00.' # the result of pickle.dumps([])
             else:
-                f=open("LocalLog_"+logfiles[len(logfiles)-item]+".dat","rb")
+                f=open(os.path.join(Page.folder,"LocalLog_"+logfiles[len(logfiles)-item]+".dat"),"rb")
                 data = f.read()
                 f.close()
         except IndexError: pass
@@ -246,7 +249,7 @@ def ServerRespond(clientsocket,other):
             if post["fileage"]=="new": logfilein = range(len(logfiles)-1,len(logfiles)-post["lognum"]-1,-1)
             else: logfilein = range(post["lognum"])
             for i in logfilein:
-                f = open("LocalLog_"+logfiles[i]+".dat","rb")
+                f = open(os.path.join("LocalLog_"+logfiles[i]+".dat"),"rb")
                 filedata.extend(pickle.load(f))
                 f.close()
                 for device in settings.networkdevices:
@@ -278,7 +281,7 @@ def ServerRespond(clientsocket,other):
         deletedfiles = 0
         if len(logfiles)>0:
             deletedfiles+=DeleteLogFiles(post["lognum"],(post["fileage"]=="new"))
-        for device in settings.networkdevices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=[["lognum",post["lognum"]],["fileage",post["fileage"]],["app","1"]]).split("")[3])
+        for device in settings.networkdevices: deletedfiles+=int(GetData(device,"/deletelocallogs",postlist=[["lognum",post["lognum"]],["fileage",post["fileage"]],["app","1"]]).split()[10])
         if post["app"]=="1":
             data = str(deletedfiles) + " files were deleted"
         else:
@@ -294,7 +297,7 @@ def ServerRespond(clientsocket,other):
             item = logfiles.pop(int(post["lognum"]))
             data = item[:4] + "/" + item[4:6] + "/" + item[6:8]
             try:
-                os.unlink("LocalLog_"+item+".dat")
+                os.unlink(os.path.join(Page.folder,"LocalLog_"+item+".dat"))
                 data += " was deleted"
             except (FileNotFoundError,ValueError): data += " was not found"
             SaveLogFileList()
@@ -306,7 +309,7 @@ def ServerRespond(clientsocket,other):
             contenttype = ""
             filetype="dat"
             if post["lognum"] < len(logfiles):
-                f = open("LocalLog_"+logfiles[post["lognum"]]+".dat","rb")
+                f = open(os.path.join(Page.folder,"LocalLog_"+logfiles[post["lognum"]]+".dat"),"rb")
                 data = f.read()
                 f.close()
             else: data = b'\x80\x03]q\x00.' # the result of pickle.dumps([])
@@ -332,7 +335,7 @@ def DeleteLogFiles(lognum,keepmode):#keepmode: False = delete lognum old, True =
     else:
         deleteindexes = range(lognum)
     print(list(deleteindexes))
-    for i in deleteindexes: os.unlink("LocalLog_"+logfiles.pop(0)+".dat")
+    for i in deleteindexes: os.unlink(os.path.join(Page.folder,"LocalLog_"+logfiles.pop(0)+".dat"))
     SaveLogFileList()
     return lognum
 def SaveLogFileList():
@@ -340,6 +343,13 @@ def SaveLogFileList():
     pickle.dump(logfiles,g)
     g.close()
 
+try:
+    f = open(os.path.join(Page.folder,"Version"),"r")
+    version = f.read()
+    f.close()
+    del f
+except FileNotFoundError:
+    version = ""
 currentlogtime = ""
 logdata = []
 devicestatus = []
