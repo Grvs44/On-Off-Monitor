@@ -20,3 +20,17 @@ function ConfirmShutdown(){
 async function ResetCache(){
 	alert(await(await fetch("/resetcache")).text())
 }
+async function GetMessages(refresh=true){
+	let messages = await(await fetch(refresh?"/refreshmessages":"/messages")).text()
+	if(messages == "") messages = "<li class='nomsg'>No messages</li>"
+	document.getElementById("messages").innerHTML = messages
+}
+function Onload(){
+	GetMessages(false)
+	document.getElementById("refmsg").onclick = RefreshMessages
+}
+async function RefreshMessages(e){
+	e.target.disabled = true
+	await GetMessages()
+	setTimeout(()=>{e.target.disabled = false},2000)
+}

@@ -117,6 +117,9 @@ def Server():
     ipaddress = gethostname()
     serversocket.bind((ipaddress,settings.port))
     serversocket.listen(5)
+    t = Thread(target=GetMessages)
+    t.daemon = True
+    t.start()
     while running:
         try:
             t = Thread(target=ServerRespond,args=serversocket.accept())
@@ -224,6 +227,12 @@ def ServerRespond(clientsocket,other):
                 SaveLogFileList()
         else:
             data = b'\x80\x03]q\x00.'
+    elif path == "/messages":
+        data = messages
+    elif path == "/refreshmessages":
+        GetMessages()
+        httpcode = 302
+        data = "/messages"
     elif path == "/version":
         data = version
         contenttype = "text/plain"
@@ -287,6 +296,7 @@ def ServerRespond(clientsocket,other):
         else:
             data = "/deleted" + str(deletedfiles)
             httpcode = 302
+            cachecontrol = "max-age=31536000, immutable"
     elif path == "/logfilelist":
         data = GetPostData(pieces,{"app":"0"})
         if data["app"]=="1": data = json.dumps(logfiles)
@@ -322,8 +332,8 @@ def ServerRespond(clientsocket,other):
     if httpcode == 200:
         if contenttype == "": clientsocket.sendall(data) # No content type = send data over TCP
         else: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: " + cachecontrol + "\r\n\r\n"+data).encode())
-    elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>".encode())
-    elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nLocation: "+data).encode())
+    elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: max-age=31536000, immutable\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>".encode())
+    elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nX-Content-Type-Options: nosniff\r\nCache-Control: " + cachecontrol + "\r\nLocation: "+data).encode())
     clientsocket.shutdown(SHUT_WR)
     if settings.dataled:
         gpio.output(settings.dataled,False)
@@ -342,6 +352,16 @@ def SaveLogFileList():
     g = open(os.path.join(Page.folder,"LogFileList.dat"),"wb")
     pickle.dump(logfiles,g)
     g.close()
+def GetMessages():
+    global messages
+    messages = ""
+    for device in settings.networkdevices:
+        try:
+            devversion = GetData(device,"/version").split("\r\n\r\n")[1]
+            if len(devversion) != 6: messages += "<li class='red'>%s (%s) is using an older version of On/Off Monitor" % (settings.networkdevices[device],device)
+            elif devversion != version: messages += "<li class='yellow'>%s (%s) is using version %s, whereas this version is %s" % (settings.networkdevices[device],device,devversion,version)
+        except ConnectionRefusedError:
+            messages += "<li class='red'>%s (%s) can't be reached</li>" % (settings.networkdevices[device],device)
 
 try:
     f = open(os.path.join(Page.folder,"Version"),"r")
@@ -350,6 +370,7 @@ try:
     del f
 except FileNotFoundError:
     version = ""
+messages = ""
 currentlogtime = ""
 logdata = []
 devicestatus = []

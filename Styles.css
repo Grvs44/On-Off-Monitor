@@ -6,3 +6,20 @@ user-select:none;
 ul{list-style-type:none;}
 input[type="submit"],input[type="button"],input[type="radio"],button{cursor:pointer;}
 input[type="date"]{font-family:Calibri;}
+#messages li{
+    padding:0.4em;
+}
+#messages .nomsg{
+    display:inline;
+    text-align:center;
+    color:#00000082;
+}
+#messages .red{
+    background-color:red;
+    color:#fff;
+}
+#messages .yel{
+    background-color:#ff9800;
+    color:#000;
+}
+#confirmdeletebutton,#confirmsdownbutton{display:none;}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-gb">
 <head>
 <meta charset="utf-8">
 <title>On/Off Monitor Home</title>
@@ -7,9 +7,13 @@
 <script type="application/javascript" src="/script.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 </head>
-<body>
+<body onload="Onload()">
 <h1>On/Off Monitor Home</h1>
 <ul>
+    <li>
+        <h2>Messages <button id="refmsg">Refresh</button></h2>
+        <ul id="messages"></ul>
+    </li>
     <li>
         <h2>Log files</h2>
         <ul>
@@ -41,7 +45,7 @@
                         </li>
                         <li>
                             <label for="date2">End date </label>
-                            <input name="date2" id="date1" type="date"/>
+                            <input name="date2" id="date2" type="date"/>
                         </li>
                         <li><input type="submit" value="Download"/></li>
                     </ul>
@@ -66,7 +70,7 @@
                         </li>
                         <li>
                             <input type="button" onclick="ConfirmDelete('Delete')" value="Delete" id="deletebutton"/>
-                            <input type="submit" style="display:none" id="confirmdeletebutton" value="Confirm delete"/>
+                            <input type="submit" id="confirmdeletebutton" value="Confirm delete"/>
                         </li>
                     </ul>
                 </form>
@@ -95,7 +99,7 @@
                 </li>
                 <li>
                     <input type="button" value="Shut down" onclick="ConfirmShutdown()" id="sdownbutton"/>
-                    <input style="display:none" type="submit" id="confirmsdownbutton" value="Confirm shut down"/>
+                    <input type="submit" id="confirmsdownbutton" value="Confirm shut down"/>
                 </li>
             </ul>
         </form>
