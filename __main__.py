@@ -105,9 +105,10 @@ def GetSettings():
     return settings
 
 def Server():
-    global running,turnoff,serversocket,pagecache,ipaddress
+    global running,turnoff,serversocket,pagecache,ipaddress,coffee
     print("On/Off Monitor Web Started")
     pagecache = {"/":Page("HomePage.html"),"/styles.css":Page("Styles.css"),"/script.js":Page("HomeScript.js"),"/status/status.js":Page("StatusScript.js"),"/status":Page("StatusPage.html"),"/status/reduced.js":Page("Reduced Status.js"),"/status/reduced":Page("Reduced Status.html"),"/app":Page("AppPage.html"),"/settings":Page("SettingsPage.html"),"/settings.js":Page("Settings.js"),"/settings1.js":Page("Load settings.js"),"/settings2.js":Page("Save settings.js"),"/settings.css":Page("Settings.css"),"/filesaver.min.js":Page("FileSaver.min.js")}
+    coffee = Page("CoffeeError.html")
     if settings.console:
         pagecache["/console"] = Page("Console.html")
         pagecache["/console.js"] = Page("Console.js")
@@ -328,12 +329,14 @@ def ServerRespond(clientsocket,other):
         try: deleteditems = path.split("deleted")[1]
         except IndexError: deleteditems = "0"
         data = "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"><title>Delete Log Files - On/Off Monitor</title><div style=\"font-family:'Segoe UI';text-align:center\"><h1>" + deleteditems + " files were deleted</h1><a href='/'>Click here</a> to return to the home page</div>"
+    elif path == "/coffee" or path == "/tea" or path == "/teapot": httpcode = 418
     else: httpcode = 404
     if httpcode == 200:
         if contenttype == "": clientsocket.sendall(data) # No content type = send data over TCP
         else: clientsocket.sendall(("HTTP/1.1 200 OK\r\nContent-Type: "+contenttype+"; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: " + cachecontrol + "\r\n\r\n"+data).encode())
     elif httpcode == 404: clientsocket.sendall("HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: max-age=31536000, immutable\r\n\r\n<title>Not found</title><h1>Not found</h1><p><a href='/'>Return to On/Off Monitor</a></p>".encode())
     elif httpcode == 302: clientsocket.sendall(("HTTP/1.1 302 FOUND\r\nX-Content-Type-Options: nosniff\r\nCache-Control: " + cachecontrol + "\r\nLocation: "+data).encode())
+    elif httpcode == 418: clientsocket.sendall(("HTTP/1.1 418 I'M A TEAPOT\r\nContent-Type: text/html; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nCache-Control: max-age=31536000, immutable\r\n\r\n" + coffee.load()).encode())
     clientsocket.shutdown(SHUT_WR)
     if settings.dataled:
         gpio.output(settings.dataled,False)
