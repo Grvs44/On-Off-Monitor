@@ -9,7 +9,7 @@ def ListToCsv(header,item):
         if i+1 != len(item): csv+="\n"
     return csv
 class Settings:
-    def __init__(this):
+    def __init__(this,default=False):
         this.sleeptime = 1
         this.logfiles = []
         this.ledswitch = None
@@ -25,7 +25,7 @@ class Settings:
         this.outputlog = False
         this.devices = []
         this.console = False        
-
+        if default: return
         if "y" in input("Set up with JSON file? (y/n) ").lower():
             try:
                 f = open(input("Path of JSON file: "),"r")
@@ -37,12 +37,13 @@ class Settings:
             except json.JSONDecodeError:
                 print("Error with decoding JSON file, set up with questions:")
                 this._initcli()
-            #except Exception as e:
-            #    print("Error",e,"Set up with questions",sep="\n")
-            #    this._initcli()
         else: this._initcli()
     def _initcli(this):
         print("On/Off Monitor Log Setup")
+        this.console = input("Access console remotely? (y/n) ").lower() == "y"
+        if input("Set up now? (y/n)\nSettings can be changed through the app or by deleting the settings file\n").lower() == "y":
+            this.save()
+            return
         sleep = input("Wait time after loops (seconds, default is 1): ")
         if sleep != "": this.sleeptime = int(sleep)
         leds = input("Input pin number for LED panel switch (leave blank if there is no switch): ")
@@ -193,6 +194,9 @@ class Settings:
             return settings
         except FileNotFoundError:
             return Settings()
+        except (EOFError,pickle.UnpicklingError,MemoryError):
+            print("Corrupt settings file, using default settings")
+            return Settings(True)
 
 class Device:
     def __init__(self,name,pin,led):
